@@ -39,8 +39,13 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
   if (lesson.module.course.teacherId !== user.id && user.role !== "ADMIN") redirect("/teacher/dashboard")
 
   const quiz = lesson.quizzes[0]
-  const typeMeta = LESSON_TYPE_META[lesson.lessonType || "VIDEO"] || LESSON_TYPE_META.VIDEO
+  const lessonType = lesson.lessonType || "VIDEO"
+  const typeMeta = LESSON_TYPE_META[lessonType] || LESSON_TYPE_META.VIDEO
   const TypeIcon = typeMeta.icon
+
+  // For LIVE lessons: scheduling is inline in the content editor, so no separate tab
+  const showSchedulerTab = lessonType === "VIDEO" || lessonType === "NOTES"
+  const showQuizTab = lessonType !== "LIVE"
 
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -66,11 +71,11 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
             </Badge>
           </div>
 
-          {/* Scheduled info */}
+          {/* Scheduled info (for VIDEO/NOTES with scheduler) */}
           {(lesson as any).scheduledAt && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 w-fit">
               <CalendarDays className="w-3.5 h-3.5 text-primary" />
-              Agendada para{" "}
+              Disponível a partir de{" "}
               <span className="font-medium text-foreground">
                 {new Date((lesson as any).scheduledAt).toLocaleString("pt-BR", {
                   day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit"
@@ -99,27 +104,38 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
         <TabsList className="h-10 gap-1">
           <TabsTrigger value="content" className="flex items-center gap-1.5">
             <TypeIcon className="w-3.5 h-3.5" />
-            Conteúdo da Aula
+            {lessonType === "NOTES" ? "Notas da Aula" : lessonType === "LIVE" ? "Sessão Ao Vivo" : lessonType === "CHALLENGE" ? "Configuração" : "Conteúdo"}
           </TabsTrigger>
-          <TabsTrigger value="scheduler" className="flex items-center gap-1.5">
-            <CalendarDays className="w-3.5 h-3.5" />
-            Agendamento
-            {(lesson as any).scheduledAt && (
-              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="quiz" className="flex items-center gap-1.5">
-            <HelpCircle className="w-3.5 h-3.5" />
-            Desafios / Quiz
-          </TabsTrigger>
+
+          {showSchedulerTab && (
+            <TabsTrigger value="scheduler" className="flex items-center gap-1.5">
+              <CalendarDays className="w-3.5 h-3.5" />
+              Agendamento
+              {(lesson as any).scheduledAt && (
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+              )}
+            </TabsTrigger>
+          )}
+
+          {showQuizTab && (
+            <TabsTrigger value="quiz" className="flex items-center gap-1.5">
+              <HelpCircle className="w-3.5 h-3.5" />
+              {lessonType === "CHALLENGE" ? "Questões" : "Desafios / Quiz"}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="content">
           <LessonContentEditor
             lessonId={lesson.id}
+            lessonType={lessonType}
             initialVideoUrl={lesson.videoUrl || undefined}
             initialContent={lesson.content || ""}
             initialVocabulary={(lesson.vocabulary as any) || []}
+            initialScheduledAt={(lesson as any).scheduledAt?.toISOString() || null}
+            initialMeetingUrl={(lesson as any).meetingUrl || null}
+            initialMeetingPlatform={(lesson as any).meetingPlatform || null}
+            initialChallengeConfig={(lesson as any).challengeConfig || null}
             title={lesson.title}
             module={lesson.module.title}
             level={lesson.module.course.level}
@@ -127,18 +143,22 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
           />
         </TabsContent>
 
-        <TabsContent value="scheduler">
-          <LessonScheduler
-            lessonId={lesson.id}
-            initialScheduledAt={(lesson as any).scheduledAt}
-            lessonTitle={lesson.title}
-            published={lesson.published || false}
-          />
-        </TabsContent>
+        {showSchedulerTab && (
+          <TabsContent value="scheduler">
+            <LessonScheduler
+              lessonId={lesson.id}
+              initialScheduledAt={(lesson as any).scheduledAt}
+              lessonTitle={lesson.title}
+              published={lesson.published || false}
+            />
+          </TabsContent>
+        )}
 
-        <TabsContent value="quiz">
-          <QuizBuilder lessonId={lesson.id} initialData={quiz} />
-        </TabsContent>
+        {showQuizTab && (
+          <TabsContent value="quiz">
+            <QuizBuilder lessonId={lesson.id} initialData={quiz} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

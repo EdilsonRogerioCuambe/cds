@@ -112,6 +112,12 @@ function lessonTypeLabel(type: string) {
   }
 }
 
+// ─── Utility: reading time ───────────────────────────────────────────────────
+function readingTime(text: string) {
+  const words = text.replace(/[#*_`\[\]()>!\-]/g, " ").split(/\s+/).filter(Boolean).length
+  return { words, minutes: Math.max(1, Math.ceil(words / 200)) }
+}
+
 // ─── NOTES Lesson ────────────────────────────────────────────────────────────
 
 function NotesLesson({
@@ -127,15 +133,21 @@ function NotesLesson({
   nextLesson?: NextLesson | null
   markdownComponents: any
 }) {
+  const { words, minutes } = readingTime(currentLesson.notes || "")
   return (
     <div className="max-w-screen-lg mx-auto p-4 sm:p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <Badge variant="secondary" className="gap-1 text-xs">
               <FileText className="w-3 h-3" /> Notas de Aula
             </Badge>
+            {words > 0 && (
+              <Badge variant="outline" className="gap-1 text-xs text-blue-400 border-blue-500/30 bg-blue-500/10">
+                <Clock className="w-3 h-3" /> {minutes} min de leitura
+              </Badge>
+            )}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold font-display text-foreground leading-tight">
             {currentLesson.title}
@@ -187,7 +199,7 @@ function NotesLesson({
           </p>
           <p className="text-xs text-muted-foreground mb-3">Ganhe 25 XP ao concluir</p>
           <Button size="sm" className="w-full max-w-xs" onClick={onComplete} disabled={completed} variant={completed ? "secondary" : "default"}>
-            {completed ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Concluída</> : "Marcou como Concluída"}
+            {completed ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Concluída</> : "Marcar como Concluída"}
           </Button>
         </CardContent>
       </Card>
@@ -829,107 +841,98 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
       <div className="flex flex-col lg:flex-row gap-8 w-full">
         {/* Main */}
         <div className="flex-1 min-w-0 space-y-6">
-          {/* Player or type placeholder */}
-          <Card className="overflow-hidden">
-            {isEditable ? (
-              <div className="p-1">
-                <VideoUpload initialUrl={currentLesson.videoUrl} onUploadComplete={(url, dur, meta) => handleSave({ videoUrl: url, duration: dur, metadata: meta })} />
-              </div>
-            ) : currentLesson.videoUrl ? (
-              <div
-                ref={containerRef}
-                className={cn("relative bg-neutral-950 aspect-video flex items-center justify-center transition-all duration-500 overflow-hidden group", isTheaterMode && !isFullscreen ? "fixed inset-0 z-[100] bg-black/95" : "")}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={() => isPlaying && setShowControls(false)}
-              >
-                <video
-                  key={currentLesson.id + (currentLesson.videoUrl || "")}
-                  ref={videoRef}
-                  src={currentLesson.videoUrl}
-                  className="w-full h-full object-contain"
-                  preload="metadata"
-                  style={{ filter: currentLesson.metadata ? `brightness(${currentLesson.metadata.brightness}%) contrast(${currentLesson.metadata.contrast}%) saturate(${currentLesson.metadata.saturation}%)` : undefined }}
-                  onPause={() => setIsPlaying(false)}
-                  onPlay={() => setIsPlaying(true)}
-                  onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
-                  onDurationChange={e => setDuration(e.currentTarget.duration)}
-                  onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime)}
-                  onClick={togglePlay}
-                  onContextMenu={e => e.preventDefault()}
-                  controlsList="nodownload"
-                />
-                {/* HUD Top Left */}
-                <div className={cn("absolute top-4 left-4 flex flex-col gap-1 transition-all duration-500", showControls ? "opacity-100" : "opacity-0")}>
-                  <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="font-mono text-[10px] text-primary uppercase tracking-[0.2em]">Live Session</span>
-                  </div>
-                  <h3 className="text-white font-display font-bold text-lg drop-shadow-lg truncate max-w-xs">{currentLesson.title}</h3>
+          {/* Video player — only render when there's a URL */}
+          {(isEditable || currentLesson.videoUrl) && (
+            <Card className="overflow-hidden">
+              {isEditable ? (
+                <div className="p-1">
+                  <VideoUpload initialUrl={currentLesson.videoUrl} onUploadComplete={(url, dur, meta) => handleSave({ videoUrl: url, duration: dur, metadata: meta })} />
                 </div>
-                {/* Center Play */}
-                {!isPlaying && (
-                  <button type="button" onClick={e => { e.stopPropagation(); togglePlay() }} className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors">
-                    <div className="w-20 h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)]">
-                      <Play className="w-10 h-10 ml-1.5 fill-current" />
+              ) : (
+                <div
+                  ref={containerRef}
+                  className={cn("relative bg-neutral-950 aspect-video flex items-center justify-center transition-all duration-500 overflow-hidden group", isTheaterMode && !isFullscreen ? "fixed inset-0 z-[100] bg-black/95" : "")}
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={() => isPlaying && setShowControls(false)}
+                >
+                  <video
+                    key={currentLesson.id + (currentLesson.videoUrl || "")}
+                    ref={videoRef}
+                    src={currentLesson.videoUrl}
+                    className="w-full h-full object-contain"
+                    preload="metadata"
+                    style={{ filter: currentLesson.metadata ? `brightness(${currentLesson.metadata.brightness}%) contrast(${currentLesson.metadata.contrast}%) saturate(${currentLesson.metadata.saturation}%)` : undefined }}
+                    onPause={() => setIsPlaying(false)}
+                    onPlay={() => setIsPlaying(true)}
+                    onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
+                    onDurationChange={e => setDuration(e.currentTarget.duration)}
+                    onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime)}
+                    onClick={togglePlay}
+                    onContextMenu={e => e.preventDefault()}
+                    controlsList="nodownload"
+                  />
+                  {/* HUD Top Left */}
+                  <div className={cn("absolute top-4 left-4 flex flex-col gap-1 transition-all duration-500", showControls ? "opacity-100" : "opacity-0")}>
+                    <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      <span className="font-mono text-[10px] text-primary uppercase tracking-[0.2em]">Live Session</span>
                     </div>
-                  </button>
-                )}
-                {/* Controls */}
-                <div className={cn("absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-6 px-6 transition-all duration-500 flex flex-col gap-4", showControls ? "opacity-100" : "opacity-0 pointer-events-none")}>
-                  <div className="relative h-1 flex items-center">
-                    <Slider value={[((currentTime || 0) / (currentLesson.metadata?.trimEnd || duration || 1)) * 100]} max={100} step={0.1} onValueChange={handleSeek} className="cursor-pointer" />
+                    <h3 className="text-white font-display font-bold text-lg drop-shadow-lg truncate max-w-xs">{currentLesson.title}</h3>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
-                        {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
-                      </button>
-                      <div className="flex items-center gap-2 group/volume">
-                        <button onClick={toggleMute} className="text-white hover:text-primary transition-colors">
-                          {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                        </button>
-                        <div className="w-0 group-hover/volume:w-20 overflow-hidden transition-all duration-300">
-                          <Slider value={[isMuted ? 0 : volume * 100]} max={100} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
-                        </div>
+                  {/* Center Play */}
+                  {!isPlaying && (
+                    <button type="button" onClick={e => { e.stopPropagation(); togglePlay() }} className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors">
+                      <div className="w-20 h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)]">
+                        <Play className="w-10 h-10 ml-1.5 fill-current" />
                       </div>
-                      <span className="text-white/80 font-mono text-xs"><span className="text-primary font-bold">{formatT(currentTime)}</span> / {formatT(duration)}</span>
+                    </button>
+                  )}
+                  {/* Controls */}
+                  <div className={cn("absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-6 px-6 transition-all duration-500 flex flex-col gap-4", showControls ? "opacity-100" : "opacity-0 pointer-events-none")}>
+                    <div className="relative h-1 flex items-center">
+                      <Slider value={[((currentTime || 0) / (currentLesson.metadata?.trimEnd || duration || 1)) * 100]} max={100} step={0.1} onValueChange={handleSeek} className="cursor-pointer" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <DropdownMenu modal={false}>
-                        <DropdownMenuTrigger asChild>
-                          <button className="text-white/80 hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">
-                            <Settings className="w-3.5 h-3.5" /> {playbackRate}x
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
+                          {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+                        </button>
+                        <div className="flex items-center gap-2 group/volume">
+                          <button onClick={toggleMute} className="text-white hover:text-primary transition-colors">
+                            {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                           </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-white/10 text-white min-w-[80px]">
-                          {[0.75, 1, 1.25, 1.5, 2].map(s => (
-                            <DropdownMenuItem key={s} onClick={() => handleSpeedChange(s)} className={cn("flex justify-center text-xs font-mono py-2 focus:bg-primary focus:text-primary-foreground", playbackRate === s && "text-primary font-bold")}>{s}x</DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <button onClick={toggleTheaterMode} className={cn("hidden md:flex text-white/80 hover:text-white p-1.5 rounded-lg transition-colors", isTheaterMode && "text-primary bg-primary/10")}>
-                        {isTheaterMode ? <Minimize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-                      </button>
-                      <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
-                        {isFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize className="w-5 h-5" />}
-                      </button>
+                          <div className="w-0 group-hover/volume:w-20 overflow-hidden transition-all duration-300">
+                            <Slider value={[isMuted ? 0 : volume * 100]} max={100} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
+                          </div>
+                        </div>
+                        <span className="text-white/80 font-mono text-xs"><span className="text-primary font-bold">{formatT(currentTime)}</span> / {formatT(duration)}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <button className="text-white/80 hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">
+                              <Settings className="w-3.5 h-3.5" /> {playbackRate}x
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-white/10 text-white min-w-[80px]">
+                            {[0.75, 1, 1.25, 1.5, 2].map(s => (
+                              <DropdownMenuItem key={s} onClick={() => handleSpeedChange(s)} className={cn("flex justify-center text-xs font-mono py-2 focus:bg-primary focus:text-primary-foreground", playbackRate === s && "text-primary font-bold")}>{s}x</DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <button onClick={toggleTheaterMode} className={cn("hidden md:flex text-white/80 hover:text-white p-1.5 rounded-lg transition-colors", isTheaterMode && "text-primary bg-primary/10")}>
+                          {isTheaterMode ? <Minimize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                        </button>
+                        <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
+                          {isFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize className="w-5 h-5" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              /* No video uploaded yet — show clean placeholder */
-              <div className="aspect-video bg-gradient-to-br from-muted/40 to-muted/20 flex flex-col items-center justify-center gap-4 text-muted-foreground border-b">
-                <div className="p-4 rounded-2xl bg-muted/30">
-                  <Video className="w-12 h-12 opacity-30" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">Vídeo em preparação</p>
-                  <p className="text-xs text-muted-foreground/60 mt-1">O professor irá carregar o vídeo em breve</p>
-                </div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
+          )}
 
           {/* Lesson title row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-0">
