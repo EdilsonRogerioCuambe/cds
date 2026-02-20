@@ -15,21 +15,8 @@ async function main() {
     },
   })
 
-  // 2. Create Courses
-  const courseA1 = await prisma.course.upsert({
-    where: { id: "64f1a2b3c4d5e6f7a8b9c0d1" }, // Using a valid MongoDB ObjectId format
-    update: {},
-    create: {
-      id: "64f1a2b3c4d5e6f7a8b9c0d1",
-      title: "Beginner",
-      description: "Start your English journey with basic greetings, simple sentences, and everyday vocabulary.",
-      level: "A1",
-      published: true,
-      price: 99.9,
-    },
-  })
-
-  console.log({ admin, courseA1 })
+  console.log({ admin })
+  console.log("✅ Seed concluído. Cursos devem ser criados pelo painel do professor.")
 }
 
 main()
