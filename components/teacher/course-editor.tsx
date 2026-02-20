@@ -386,7 +386,8 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
               <CardTitle>Detalhes do Curso</CardTitle>
               <CardDescription>Informações básicas que os alunos verão primeiro.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
+              {/* Thumbnail */}
               <div className="space-y-2">
                 <Label>Capa do Curso</Label>
                 <ImageUpload
@@ -394,54 +395,123 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                   initialUrl={course.thumbnailUrl}
                 />
               </div>
+
+              {/* Title + char count */}
               <div className="space-y-2">
-                <Label htmlFor="title">Título do Curso</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="title">Título do Curso</Label>
+                  <span className={`text-[10px] tabular-nums ${
+                    (course.title?.length || 0) > 70 ? "text-amber-500" : "text-muted-foreground"
+                  }`}>{course.title?.length || 0}/80</span>
+                </div>
                 <Input
                   id="title"
                   name="title"
+                  maxLength={80}
                   value={course.title}
                   onChange={handleChange}
                   placeholder="Ex: Inglês Instrumental para TI"
                 />
               </div>
+
+              {/* CEFR Level with visual bar */}
               <div className="space-y-2">
-                <Label htmlFor="level">Nível</Label>
+                <Label htmlFor="level">Nível (CEFR)</Label>
                 <Select onValueChange={handleLevelChange} defaultValue={course.level}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o nível" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A1">A1 - Iniciante</SelectItem>
-                    <SelectItem value="A2">A2 - Elementar</SelectItem>
-                    <SelectItem value="B1">B1 - Intermediário</SelectItem>
-                    <SelectItem value="B2">B2 - Intermediário Superior</SelectItem>
-                    <SelectItem value="C1">C1 - Avançado</SelectItem>
-                    <SelectItem value="C2">C2 - Proficiente</SelectItem>
+                    {[
+                      { value: "A1", label: "A1 – Iniciante", color: "bg-emerald-400" },
+                      { value: "A2", label: "A2 – Elementar", color: "bg-green-500" },
+                      { value: "B1", label: "B1 – Intermediário", color: "bg-yellow-400" },
+                      { value: "B2", label: "B2 – Intermediário Superior", color: "bg-orange-400" },
+                      { value: "C1", label: "C1 – Avançado", color: "bg-red-400" },
+                      { value: "C2", label: "C2 – Proficiente", color: "bg-purple-500" },
+                    ].map(({ value, label, color }) => (
+                      <SelectItem key={value} value={value}>
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+                          {label}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {/* Visual CEFR bar */}
+                {course.level && (
+                  <div className="flex gap-0.5 mt-1">
+                    {["A1","A2","B1","B2","C1","C2"].map((lvl, i) => {
+                      const levels = ["A1","A2","B1","B2","C1","C2"]
+                      const selected = levels.indexOf(course.level)
+                      const colors = ["bg-emerald-400","bg-green-500","bg-yellow-400","bg-orange-400","bg-red-400","bg-purple-500"]
+                      return (
+                        <div
+                          key={lvl}
+                          className={`h-1.5 flex-1 rounded-full transition-all ${
+                            i <= selected ? colors[selected] : "bg-muted"
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+                )}
               </div>
+
+              {/* Description + char count */}
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="description">Descrição</Label>
+                  <span className={`text-[10px] tabular-nums ${
+                    (course.description?.length || 0) > 900 ? "text-amber-500" : "text-muted-foreground"
+                  }`}>{course.description?.length || 0} caracteres</span>
+                </div>
                 <Textarea
                   id="description"
                   name="description"
                   value={course.description}
                   onChange={handleChange}
-                  placeholder="Do que se trata o curso?"
-                  rows={4}
+                  placeholder="Descreva o curso: o que o aluno vai aprender, para quem é indicado e o diferencial da metodologia."
+                  rows={5}
                 />
               </div>
+
+              {/* Price with Gratuito toggle + Duration */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Preço (R$)</Label>
-                  <Input
-                    id="price"
-                    name="price"
-                    type="number"
-                    value={course.price}
-                    onChange={handleChange}
-                    placeholder="0,00"
-                  />
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="price">Preço (R$)</Label>
+                    <button
+                      type="button"
+                      onClick={() => setCourse((prev: any) => ({ ...prev, price: prev.price > 0 ? 0 : prev._lastPrice || 99 }))}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                        Number(course.price) === 0
+                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
+                          : "text-muted-foreground border-border hover:border-primary/40"
+                      }`}
+                    >
+                      {Number(course.price) === 0 ? "✓ Gratívio" : "Tornar Gratívio"}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                    <Input
+                      id="price"
+                      name="price"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={course.price}
+                      onChange={(e) => {
+                        const val = Number(e.target.value)
+                        if (val > 0) setCourse((prev: any) => ({ ...prev, price: val, _lastPrice: val }))
+                        else setCourse((prev: any) => ({ ...prev, price: val }))
+                      }}
+                      className="pl-9"
+                      placeholder="0,00"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -477,15 +547,44 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Category — combobox with presets */}
               <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Input
-                  id="category"
-                  name="category"
+                <Label>Categoria</Label>
+                <Select
                   value={course.category || ""}
-                  onChange={handleChange}
-                  placeholder="Ex: Business English"
-                />
+                  onValueChange={(val) => setCourse((prev: any) => ({ ...prev, category: val === "_custom" ? "" : val }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione ou escreva uma categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Inglês Geral">Inglês Geral</SelectItem>
+                    <SelectItem value="Business English">Business English</SelectItem>
+                    <SelectItem value="Inglês para TI">Inglês para TI</SelectItem>
+                    <SelectItem value="Inglês Conversacional">Inglês Conversacional</SelectItem>
+                    <SelectItem value="Preparação para Exames">Preparação para Exames (TOEFL/IELTS)</SelectItem>
+                    <SelectItem value="Inglês Acadêmico">Inglês Acadêmico</SelectItem>
+                    <SelectItem value="Inglês para Crianças">Inglês para Crianças</SelectItem>
+                    <SelectItem value="Pronunúncia e Fonética">Pronunúncia e Fonética</SelectItem>
+                    <SelectItem value="Gramática Avançada">Gramática Avançada</SelectItem>
+                    <SelectItem value="_custom">Outra (personalizada)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {/* Show free-text input if custom or not in list */}
+                {(course.category === "" || ![
+                  "Inglês Geral","Business English","Inglês para TI","Inglês Conversacional",
+                  "Preparação para Exames","Inglês Acadêmico","Inglês para Crianças",
+                  "Pronunúncia e Fonética","Gramática Avançada"
+                ].includes(course.category)) && (
+                  <Input
+                    name="category"
+                    value={course.category || ""}
+                    onChange={handleChange}
+                    placeholder="Digite uma categoria personalizada"
+                    className="mt-1.5"
+                  />
+                )}
               </div>
             </CardContent>
           </Card>
