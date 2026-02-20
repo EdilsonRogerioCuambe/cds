@@ -365,18 +365,39 @@ export async function issueModuleCertificate(moduleId: string) {
 
 // --- PROFILE ACTIONS ---
 
-export async function updateProfile(data: { name?: string }) {
+export async function updateProfile(data: { name?: string; phone?: string; bio?: string }) {
   "use server"
   const user = await getCurrentUser()
   if (!user) throw new Error("Não autorizado")
 
+  // Normalize phone to E.164 (strip non-digits, prepend +258 if local Mozambique number)
+  let phone = data.phone?.trim() ?? undefined
+  if (phone) {
+    const digits = phone.replace(/\D/g, "")
+    if (digits.startsWith("258") && digits.length === 12) {
+      phone = `+${digits}`
+    } else if (digits.length === 9) {
+      phone = `+258${digits}`
+    } else if (digits.startsWith("0") && digits.length === 10) {
+      phone = `+258${digits.slice(1)}`
+    } else {
+      phone = `+${digits}`
+    }
+  }
+
   await prisma.user.update({
     where: { id: user.id },
-    data: { name: data.name }
+    data: {
+      name: data.name,
+      phone,
+      bio: data.bio,
+    }
   })
 
   revalidatePath("/student/profile")
+  revalidatePath("/student/settings")
   revalidatePath("/student/dashboard")
+  revalidatePath("/teacher/settings")
 }
 
 // --- FORUM ACTIONS ---

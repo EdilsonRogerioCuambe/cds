@@ -36,6 +36,7 @@ const studentNav: NavItem[] = [
   { label: "Fórum", href: "/student/forum", icon: MessageSquare },
   { label: "Ranking", href: "/student/leaderboard", icon: Trophy },
   { label: "Perfil", href: "/student/profile", icon: User },
+  { label: "Configurações", href: "/student/settings", icon: Settings },
 ]
 
 const teacherNav: NavItem[] = [
