@@ -63,15 +63,17 @@ model User {
   termsAccepted   Boolean   @default(false)
   termsAcceptedAt DateTime?
 
-  sessions     Session[]
-  accounts     Account[]
-  enrollments  Enrollment[]
-  quizAttempts QuizAttempt[]
-  progress     Progress[]
-  payments     Payment[]
-  certificates Certificate[]
-  courses      Course[]      @relation("CourseTeacher")
-  studyLogs    StudyLog[]
+  sessions         Session[]
+  accounts         Account[]
+  enrollments      Enrollment[]
+  quizAttempts     QuizAttempt[]
+  progress         Progress[]
+  payments         Payment[]
+  certificates     Certificate[]
+  courses          Course[]          @relation("CourseTeacher")
+  studyLogs        StudyLog[]
+  userAchievements UserAchievement[]
+  activityLogs     ActivityLog[]
 }
 
 model StudyLog {
@@ -240,11 +242,12 @@ model Quiz {
   title       String
   description String?
   type        String  @default("standard") // standard, listening, challenge, etc.
+  level       String? // A1, A2, etc. for standalone quizzes
   points      Int     @default(100)
   questions   Json // Store questions as JSON array for flexibility
 
-  lessonId String @db.ObjectId
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId String? @db.ObjectId
+  lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   attempts QuizAttempt[]
 }
@@ -287,4 +290,46 @@ model Certificate {
 
   userId String @db.ObjectId
   user   User   @relation(fields: [userId], references: [id])
+}
+
+model Achievement {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  slug        String @unique // e.g., "first-step"
+  name        String
+  description String
+  icon        String // Lucide icon name
+  criteria    Json? // Logic for awarding
+
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String      @db.ObjectId
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt      DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+enum ActivityType {
+  LESSON_COMPLETE
+  QUIZ_COMPLETE
+  FORUM_POST
+  COURSE_ENROLL
+  STREAK_MILESTONE
+  ACHIEVEMENT_EARNED
+}
+
+model ActivityLog {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String       @db.ObjectId
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  title     String
+  xpEarned  Int          @default(0)
+  metadata  Json?
+  createdAt DateTime     @default(now())
 }
