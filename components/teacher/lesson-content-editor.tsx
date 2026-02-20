@@ -17,6 +17,8 @@ import {
     Globe,
     Loader2,
     Play,
+    Plus,
+    Trash2,
     Zap,
 } from "lucide-react"
 import { useState } from "react"
@@ -48,11 +50,117 @@ function calcReadingTime(markdown: string) {
   return { words, minutes }
 }
 
+// ── Shared Vocabulary / Grammar Editor ───────────────────────────────────────
+function VocabularyEditor({ lessonId, initialVocabulary }: {
+  lessonId: string
+  initialVocabulary?: any[]
+}) {
+  const [vocab, setVocab] = useState<any[]>(initialVocabulary || [])
+  const [saving, setSaving] = useState(false)
+
+  const add = () => setVocab(v => [...v, { word: "", definition: "", example: "" }])
+  const remove = (i: number) => setVocab(v => v.filter((_, idx) => idx !== i))
+  const update = (i: number, field: string, value: string) => {
+    setVocab(v => { const nv = [...v]; nv[i] = { ...nv[i], [field]: value }; return nv })
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateLesson(lessonId, { vocabulary: vocab } as any)
+      toast.success("Vocabulário salvo")
+    } catch {
+      toast.error("Erro ao salvar vocabulário")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-primary" />
+            <CardTitle>Vocabulário / Gramática</CardTitle>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={add} className="h-8 text-xs gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Adicionar Termo
+            </Button>
+            <Button size="sm" onClick={save} disabled={saving} className="h-8 text-xs">
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              Salvar
+            </Button>
+          </div>
+        </div>
+        <CardDescription>
+          Adicione palavras, expressões ou regras gramaticais que o aluno verá nesta aula.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {vocab.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl">
+            <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-20" />
+            <p className="text-sm">Nenhum termo adicionado.</p>
+            <Button size="sm" variant="ghost" className="mt-2 text-xs" onClick={add}>
+              <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar primeiro termo
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {vocab.map((v: any, i: number) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 border rounded-xl relative group bg-muted/10">
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="absolute top-3 right-3 text-destructive/50 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Palavra / Termo</label>
+                  <Input
+                    placeholder="e.g. Nevertheless"
+                    value={v.word}
+                    onChange={e => update(i, "word", e.target.value)}
+                    className="h-9 text-sm font-medium"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Definição / Tradução</label>
+                  <Input
+                    placeholder="e.g. No entanto, mesmo assim"
+                    value={v.definition}
+                    onChange={e => update(i, "definition", e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Exemplo de Uso</label>
+                  <Input
+                    placeholder="e.g. Nevertheless, she succeeded."
+                    value={v.example}
+                    onChange={e => update(i, "example", e.target.value)}
+                    className="h-9 text-sm italic"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+
 // ── VIDEO editor ──────────────────────────────────────────────────────────────
-function VideoEditor({ lessonId, initialVideoUrl, initialContent, initialMetadata }: {
+function VideoEditor({ lessonId, initialVideoUrl, initialContent, initialVocabulary, initialMetadata }: {
   lessonId: string
   initialVideoUrl?: string
   initialContent?: string
+  initialVocabulary?: any[]
   initialMetadata?: any
 }) {
   const [notes, setNotes] = useState(initialContent || "")
@@ -111,14 +219,17 @@ function VideoEditor({ lessonId, initialVideoUrl, initialContent, initialMetadat
           />
         </CardContent>
       </Card>
+
+      <VocabularyEditor lessonId={lessonId} initialVocabulary={initialVocabulary} />
     </div>
   )
 }
 
 // ── NOTES editor ──────────────────────────────────────────────────────────────
-function NotesEditor({ lessonId, initialContent }: {
+function NotesEditor({ lessonId, initialContent, initialVocabulary }: {
   lessonId: string
   initialContent?: string
+  initialVocabulary?: any[]
 }) {
   const [content, setContent] = useState(initialContent || "")
   const [preview, setPreview] = useState(false)
@@ -212,7 +323,9 @@ function NotesEditor({ lessonId, initialContent }: {
           </div>
         </CardContent>
       </Card>
-    </div>
+    
+
+      <VocabularyEditor lessonId={lessonId} initialVocabulary={initialVocabulary} /></div>
   )
 }
 
@@ -485,7 +598,7 @@ export function LessonContentEditor({
 }: LessonContentEditorProps) {
   switch (lessonType) {
     case "NOTES":
-      return <NotesEditor lessonId={lessonId} initialContent={initialContent} />
+      return <NotesEditor lessonId={lessonId} initialContent={initialContent} initialVocabulary={initialVocabulary} />
 
     case "LIVE":
       return (
