@@ -109,20 +109,34 @@ export async function deleteModule(id: string) {
 
 export async function addLesson(moduleId: string, data: {
   title: string
+  order: number
+  lessonType?: string
   content?: string
   videoUrl?: string
   duration?: number
-  order: number
   published?: boolean
+  scheduledAt?: string
+  meetingUrl?: string
+  meetingPlatform?: string
+  challengeConfig?: any
 }) {
   const lesson = await prisma.lesson.create({
     data: {
-      ...data,
+      title: data.title,
+      order: data.order,
+      lessonType: (data.lessonType as any) || "VIDEO",
+      content: data.content,
+      videoUrl: data.videoUrl,
+      duration: data.duration,
+      published: data.published || false,
+      scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
+      meetingUrl: data.meetingUrl,
+      meetingPlatform: data.meetingPlatform,
+      challengeConfig: data.challengeConfig,
       moduleId,
     },
   })
 
-  // Find courseId to revalidate
   const module = await prisma.module.findUnique({
     where: { id: moduleId },
     select: { courseId: true }

@@ -10,7 +10,6 @@ export async function GET(
 ) {
   try {
     const { path } = await params
-    // 1. Verify Authentication
     const user = await getCurrentUser()
     if (!user) {
       return new NextResponse("Unauthorized", { status: 401 })
@@ -19,9 +18,7 @@ export async function GET(
     const filename = path.join("/")
     const filePath = join(process.cwd(), "storage/videos", filename)
 
-    // 2. Check if file exists
     if (!existsSync(filePath)) {
-      console.error("File not found:", filePath)
       return new NextResponse("File Not Found", { status: 404 })
     }
 
@@ -30,7 +27,6 @@ export async function GET(
     const range = req.headers.get("range")
     const contentType = filename.endsWith(".webm") ? "video/webm" : "video/mp4"
 
-    // 3. Handle Chunked Streaming (Range Header)
     if (range) {
       const parts = range.replace(/bytes=/, "").split("-")
       const start = parseInt(parts[0], 10)
@@ -39,17 +35,44 @@ export async function GET(
       if (start >= fileSize || end >= fileSize) {
         return new NextResponse("Range Not Satisfiable", {
           status: 416,
-          headers: { "Content-Range": `bytes */${fileSize}` }
+          headers: { "Content-Range": `bytes */${fileSize}` },
         })
       }
 
-      const chunksize = (end - start) + 1
+      const chunksize = end - start + 1
       const nodeStream = createReadStream(filePath, { start, end })
 
-      // Convert Node.js readable to Web ReadableStream
-      const stream = Readable.toWeb(nodeStream)
+      // Abort the underlying file stream if the client disconnects
+      req.signal.addEventListener("abort", () => {
+        nodeStream.destroy()
+      })
 
-      return new NextResponse(stream as any, {
+      const stream = new ReadableStream({
+        start(controller) {
+          nodeStream.on("data", (chunk) => {
+            try {
+              controller.enqueue(chunk)
+            } catch {
+              // Client disconnected mid-stream: silently destroy
+              nodeStream.destroy()
+            }
+          })
+          nodeStream.on("end", () => {
+            try { controller.close() } catch { /* already closed */ }
+          })
+          nodeStream.on("error", (err) => {
+            // Suppress benign abort errors
+            if ((err as any).code !== "ERR_STREAM_DESTROYED") {
+              try { controller.error(err) } catch { /* already closed */ }
+            }
+          })
+        },
+        cancel() {
+          nodeStream.destroy()
+        },
+      })
+
+      return new NextResponse(stream, {
         status: 206,
         headers: {
           "Content-Range": `bytes ${start}-${end}/${fileSize}`,
@@ -57,11 +80,12 @@ export async function GET(
           "Content-Length": chunksize.toString(),
           "Content-Type": contentType,
           "X-Content-Type-Options": "nosniff",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "private, no-transform",
         },
       })
     } else {
       const nodeStream = createReadStream(filePath)
+      req.signal.addEventListener("abort", () => nodeStream.destroy())
       const stream = Readable.toWeb(nodeStream)
 
       return new NextResponse(stream as any, {
@@ -71,11 +95,13 @@ export async function GET(
           "Content-Type": contentType,
           "Accept-Ranges": "bytes",
           "X-Content-Type-Options": "nosniff",
-          "Cache-Control": "no-cache",
+          "Cache-Control": "private, no-transform",
         },
       })
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Suppress expected client-disconnect noise
+    if (error?.code === "ERR_INVALID_STATE" || error?.code === "ERR_STREAM_DESTROYED") return new NextResponse(null, { status: 499 })
     console.error("Streaming error:", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }

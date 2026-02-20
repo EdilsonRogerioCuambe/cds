@@ -48,7 +48,7 @@ import { SortableItem } from "./sortable-item"
 
 import { addLesson, addModule, createCourse, deleteLesson, deleteModule, reorderLessons, reorderModules, updateCourse } from "@/lib/actions/teacher"
 import { formatStudyTime } from "@/lib/utils/time"
-import { ArrowLeft, Clock, Edit, FileText, GripVertical, HelpCircle, PlusCircle, Save, Trash2, Video } from "lucide-react"
+import { ArrowLeft, Clock, Edit, FileText, GripVertical, HelpCircle, PlusCircle, Save, Trash2, Video, Zap } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import React, { useState } from "react"
@@ -92,6 +92,10 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
 
   const [lessonModalOpen, setLessonModalOpen] = useState(false)
   const [newLessonTitle, setNewLessonTitle] = useState("")
+  const [newLessonType, setNewLessonType] = useState("VIDEO")
+  const [newLessonMeetingUrl, setNewLessonMeetingUrl] = useState("")
+  const [newLessonMeetingPlatform, setNewLessonMeetingPlatform] = useState("zoom")
+  const [newLessonScheduledAt, setNewLessonScheduledAt] = useState("")
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null)
 
   // Calculate total seconds from all modules and lessons
@@ -286,7 +290,11 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
       const module = course.modules.find((m: any) => m.id === activeModuleId)
       const newLesson = await addLesson(activeModuleId, {
         title: newLessonTitle,
-        order: (module?.lessons?.length || 0) + 1
+        order: (module?.lessons?.length || 0) + 1,
+        lessonType: newLessonType,
+        scheduledAt: newLessonType === "LIVE" && newLessonScheduledAt ? newLessonScheduledAt : undefined,
+        meetingUrl: newLessonType === "LIVE" ? newLessonMeetingUrl || undefined : undefined,
+        meetingPlatform: newLessonType === "LIVE" ? newLessonMeetingPlatform || undefined : undefined,
       })
 
       setCourse((prev: any) => ({
@@ -298,6 +306,9 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
         )
       }))
       setNewLessonTitle("")
+      setNewLessonType("VIDEO")
+      setNewLessonMeetingUrl("")
+      setNewLessonScheduledAt("")
       setLessonModalOpen(false)
       toast.success("Aula adicionada")
     } finally {
@@ -595,12 +606,32 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                         <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
                                           <div className="flex items-center gap-3">
                                             <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                            {lesson.videoId ? <Video className="w-4 h-4 text-primary" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
+                                            {/* Lesson type icon */}
+                                            {lesson.lessonType === "NOTES" ? (
+                                              <FileText className="w-4 h-4 text-blue-400" />
+                                            ) : lesson.lessonType === "LIVE" ? (
+                                              <Video className="w-4 h-4 text-red-400" />
+                                            ) : lesson.lessonType === "CHALLENGE" ? (
+                                              <Zap className="w-4 h-4 text-amber-400" />
+                                            ) : (
+                                              <Video className="w-4 h-4 text-primary" />
+                                            )}
                                             <div className="flex flex-col">
                                               <span className="text-sm font-medium">{lesson.title}</span>
-                                              <Badge variant={lesson.published ? "default" : "secondary"} className="mt-0.5 h-3.5 text-[8px] px-1 w-fit uppercase">
-                                                {lesson.published ? "Publicado" : "Draft"}
-                                              </Badge>
+                                              <div className="flex items-center gap-1.5 mt-0.5">
+                                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-3.5 text-[8px] px-1 uppercase">
+                                                  {lesson.published ? "Publicado" : "Draft"}
+                                                </Badge>
+                                                {lesson.lessonType && lesson.lessonType !== "VIDEO" && (
+                                                  <Badge variant="outline" className={`h-3.5 text-[8px] px-1 uppercase ${
+                                                    lesson.lessonType === "NOTES" ? "border-blue-400/30 text-blue-400" :
+                                                    lesson.lessonType === "LIVE" ? "border-red-400/30 text-red-400" :
+                                                    lesson.lessonType === "CHALLENGE" ? "border-amber-400/30 text-amber-400" : ""
+                                                  }`}>
+                                                    {lesson.lessonType === "NOTES" ? "Notas" : lesson.lessonType === "LIVE" ? "Ao Vivo" : "Desafio"}
+                                                  </Badge>
+                                                )}
+                                              </div>
                                             </div>
                                           </div>
                                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -676,10 +707,10 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
       </Dialog>
 
       <Dialog open={lessonModalOpen} onOpenChange={setLessonModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Nova Aula</DialogTitle>
-            <DialogDescription>Dê um título para a nova aula.</DialogDescription>
+            <DialogDescription>Defina o título e o tipo da aula.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -692,10 +723,75 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                 onKeyDown={(e) => e.key === "Enter" && handleAddLesson()}
               />
             </div>
+
+            {/* Lesson Type Selector */}
+            <div className="space-y-2">
+              <Label>Tipo de Aula</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: "VIDEO", label: "Vídeo", icon: <Video className="w-4 h-4" />, desc: "Aula com player de vídeo", color: "text-primary" },
+                  { value: "NOTES", label: "Notas", icon: <FileText className="w-4 h-4" />, desc: "Apenas texto/markdown", color: "text-blue-400" },
+                  { value: "LIVE", label: "Ao Vivo", icon: <Video className="w-4 h-4" />, desc: "Sessão síncrona online", color: "text-red-400" },
+                  { value: "CHALLENGE", label: "Desafio", icon: <Zap className="w-4 h-4" />, desc: "Quiz com timer e XP", color: "text-amber-400" },
+                ] as const).map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setNewLessonType(t.value)}
+                    className={`flex items-start gap-2.5 p-3 rounded-lg border-2 text-left transition-all ${
+                      newLessonType === t.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/50"
+                    }`}
+                  >
+                    <span className={`mt-0.5 ${t.color}`}>{t.icon}</span>
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">{t.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{t.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* LIVE extra fields */}
+            {newLessonType === "LIVE" && (
+              <div className="space-y-3 p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Data e Hora da Sessão</Label>
+                  <Input
+                    type="datetime-local"
+                    value={newLessonScheduledAt}
+                    onChange={(e) => setNewLessonScheduledAt(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Plataforma</Label>
+                  <Select value={newLessonMeetingPlatform} onValueChange={setNewLessonMeetingPlatform}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zoom">Zoom</SelectItem>
+                      <SelectItem value="meet">Google Meet</SelectItem>
+                      <SelectItem value="teams">Microsoft Teams</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Link da Reunião (opcional)</Label>
+                  <Input
+                    placeholder="https://zoom.us/j/..."
+                    value={newLessonMeetingUrl}
+                    onChange={(e) => setNewLessonMeetingUrl(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLessonModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddLesson} disabled={loading}>Criar Aula</Button>
+            <Button onClick={handleAddLesson} disabled={loading || !newLessonTitle.trim()}>Criar Aula</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
