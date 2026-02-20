@@ -234,12 +234,12 @@ export function ModuleEditor({ initialData }: ModuleEditorProps) {
 
       <div className="lg:col-span-2">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle>Aulas do Módulo</CardTitle>
               <CardDescription>Gerencie as aulas integradas a este módulo.</CardDescription>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setLessonModalOpen(true)}>
+            <Button size="sm" variant="outline" onClick={() => setLessonModalOpen(true)} className="w-full sm:w-auto">
               <PlusCircle className="w-4 h-4 mr-2" />
               Nova Aula
             </Button>
@@ -265,25 +265,29 @@ export function ModuleEditor({ initialData }: ModuleEditorProps) {
                     {module.lessons.map((lesson: any) => (
                       <SortableItem key={lesson.id} id={lesson.id}>
                         <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
-                          <div className="flex items-center gap-3">
-                            <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                            {lesson.videoUrl ? <Video className="w-4 h-4 text-primary" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
-                            <div className="flex flex-col">
-                              <span className="text-sm font-medium">{lesson.title}</span>
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="shrink-0">
+                              <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                            </div>
+                            <div className="shrink-0">
+                              {lesson.videoUrl ? <Video className="w-4 h-4 text-primary" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-sm font-medium truncate">{lesson.title}</span>
                               <div className="flex gap-2 items-center">
-                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-4 text-[9px] px-1 uppercase">
+                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-4 text-[9px] px-1 uppercase shrink-0">
                                   {lesson.published ? "Publicado" : "Draft"}
                                 </Badge>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
                             <Switch
                               checked={lesson.published}
                               onCheckedChange={() => handleToggleLessonPublished(lesson.id, lesson.published)}
                               className="scale-75"
                             />
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                               <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                                 <Link
                                   href={`/teacher/courses/lesson/${lesson.id}/edit`}

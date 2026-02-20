@@ -358,15 +358,15 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+    <div className="space-y-6 pb-20 max-w-full">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="self-start sm:self-auto">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Voltar
         </Button>
-        <div className="flex gap-4 items-center">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center w-full sm:w-auto">
           {course.id && (
-            <div className="flex items-center gap-2 px-3 py-1.5 border rounded-lg bg-muted/30">
+            <div className="flex items-center gap-2 px-3 py-1.5 border rounded-lg bg-muted/30 w-full sm:w-auto justify-between sm:justify-start">
               <Label className="text-xs cursor-pointer" htmlFor="publish-toggle">
                 {course.published ? "Publicado" : "Rascunho"}
               </Label>
@@ -379,7 +379,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
               />
             </div>
           )}
-          <Button size="sm" onClick={handleSaveBasic} disabled={loading}>
+          <Button size="sm" onClick={handleSaveBasic} disabled={loading} className="w-full sm:w-auto">
             <Save className="w-4 h-4 mr-2" />
             Salvar Alterações
           </Button>
@@ -486,7 +486,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
               </div>
 
               {/* Price with Gratuito toggle + Duration */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <Label htmlFor="price">Preço (R$)</Label>
@@ -717,12 +717,12 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
         {/* Right Column: Structure (Modules/Lessons) */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <CardTitle>Estrutura do Curso</CardTitle>
                 <CardDescription>Gerencie módulos, aulas e testes.</CardDescription>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setModuleModalOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => setModuleModalOpen(true)} className="w-full sm:w-auto">
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Novo Módulo
               </Button>
@@ -746,18 +746,20 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                           {({ attributes, listeners }: any) => (
                             <AccordionItem value={module.id} className="border rounded-lg px-4 bg-card">
                               <div className="flex items-center gap-2">
-                                <AccordionTrigger className="hover:no-underline py-4 flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <div {...attributes} {...listeners}>
+                                <AccordionTrigger className="hover:no-underline py-4 flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-left">
+                                    <div {...attributes} {...listeners} className="shrink-0">
                                       <GripVertical className="w-4 h-4 text-muted-foreground mr-2 cursor-grab active:cursor-grabbing" />
                                     </div>
-                                    <span className="font-bold">{module.title}</span>
-                                  <Badge variant={module.published ? "default" : "secondary"} className="ml-2 h-4 text-[9px] px-1 uppercase">
-                                    {module.published ? "Publicado" : "Draft"}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground ml-2">({module.lessons?.length || 0} aulas)</span>
-                                </div>
-                              </AccordionTrigger>
+                                    <span className="font-bold truncate max-w-[150px] sm:max-w-xs">{module.title}</span>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Badge variant={module.published ? "default" : "secondary"} className="h-4 text-[9px] px-1 uppercase">
+                                        {module.published ? "Publicado" : "Draft"}
+                                      </Badge>
+                                      <span className="text-xs text-muted-foreground">({module.lessons?.length || 0} aulas)</span>
+                                    </div>
+                                  </div>
+                                </AccordionTrigger>
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -796,28 +798,30 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                       <SortableItem key={lesson.id} id={lesson.id}>
                                         {({ attributes, listeners }: any) => (
                                           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
-                                            <div className="flex items-center gap-3">
-                                              <div {...attributes} {...listeners}>
-                                                <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                              </div>
-                                              {/* Lesson type icon */}
-                                            {lesson.lessonType === "NOTES" ? (
-                                              <FileText className="w-4 h-4 text-blue-400" />
-                                            ) : lesson.lessonType === "LIVE" ? (
-                                              <Video className="w-4 h-4 text-red-400" />
-                                            ) : lesson.lessonType === "CHALLENGE" ? (
-                                              <Zap className="w-4 h-4 text-amber-400" />
-                                            ) : (
-                                              <Video className="w-4 h-4 text-primary" />
-                                            )}
-                                            <div className="flex flex-col">
-                                              <span className="text-sm font-medium">{lesson.title}</span>
-                                              <div className="flex items-center gap-1.5 mt-0.5">
-                                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-3.5 text-[8px] px-1 uppercase">
+                                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div {...attributes} {...listeners} className="shrink-0">
+                                              <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                            </div>
+                                            {/* Lesson type icon with shrink-0 */}
+                                            <div className="shrink-0">
+                                              {lesson.lessonType === "NOTES" ? (
+                                                <FileText className="w-4 h-4 text-blue-400" />
+                                              ) : lesson.lessonType === "LIVE" ? (
+                                                <Video className="w-4 h-4 text-red-400" />
+                                              ) : lesson.lessonType === "CHALLENGE" ? (
+                                                <Zap className="w-4 h-4 text-amber-400" />
+                                              ) : (
+                                                <Video className="w-4 h-4 text-primary" />
+                                              )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                              <span className="text-sm font-medium truncate">{lesson.title}</span>
+                                              <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-3.5 text-[8px] px-1 uppercase shrink-0">
                                                   {lesson.published ? "Publicado" : "Draft"}
                                                 </Badge>
                                                 {lesson.lessonType && lesson.lessonType !== "VIDEO" && (
-                                                  <Badge variant="outline" className={`h-3.5 text-[8px] px-1 uppercase ${
+                                                  <Badge variant="outline" className={`h-3.5 text-[8px] px-1 uppercase shrink-0 ${
                                                     lesson.lessonType === "NOTES" ? "border-blue-400/30 text-blue-400" :
                                                     lesson.lessonType === "LIVE" ? "border-red-400/30 text-red-400" :
                                                     lesson.lessonType === "CHALLENGE" ? "border-amber-400/30 text-amber-400" : ""
@@ -931,7 +935,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
             {/* Lesson Type Selector */}
             <div className="space-y-2">
               <Label>Tipo de Aula</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {([
                   { value: "VIDEO", label: "Vídeo", icon: <Video className="w-4 h-4" />, desc: "Aula com player de vídeo", color: "text-primary" },
                   { value: "NOTES", label: "Notas", icon: <FileText className="w-4 h-4" />, desc: "Apenas texto/markdown", color: "text-blue-400" },
@@ -1036,7 +1040,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
 
             {/* CHALLENGE extra fields */}
             {newLessonType === "CHALLENGE" && (
-              <div className="grid grid-cols-2 gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Tempo Limite (minutos)</Label>
                   <Input

@@ -7,15 +7,15 @@ import { Progress } from "@/components/ui/progress"
 import { type Course, type Module } from "@/lib/data"
 import { cn, formatDuration } from "@/lib/utils"
 import {
-  BookOpen,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Loader2,
-  Lock,
-  Play,
-  Users,
+    BookOpen,
+    CheckCircle2,
+    ChevronDown,
+    ChevronRight,
+    Clock,
+    Loader2,
+    Lock,
+    Play,
+    Users,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -58,7 +58,7 @@ function ModuleCard({
       >
         <div
           className={cn(
-            "flex items-center justify-center w-10 h-10 rounded-lg text-xs font-bold",
+            "flex items-center justify-center w-10 h-10 rounded-lg text-xs font-bold shrink-0",
             isComplete
               ? "bg-success/10 text-success"
               : "bg-primary/10 text-primary"
@@ -185,7 +185,7 @@ function CourseCard({ course }: { course: Course }) {
     >
       <CardContent className="p-0">
         <div className="p-5">
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col sm:flex-row items-start gap-4">
             <div
               className={cn(
                 "flex items-center justify-center w-14 h-14 rounded-2xl text-white font-display text-lg font-bold shrink-0",

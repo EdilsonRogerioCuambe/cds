@@ -11,7 +11,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total de Alunos</CardTitle>
@@ -58,9 +58,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Link href="/admin/users/students">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link href="/admin/users/teachers">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="h-5 w-5" />
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link href="/admin/courses">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
@@ -108,7 +108,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link href="/admin/content/lessons">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link href="/admin/analytics">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -140,7 +140,7 @@ export default function AdminDashboardPage() {
         </Link>
 
         <Link href="/admin/settings">
-          <Card className="hover:bg-accent transition-colors cursor-pointer">
+          <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />

@@ -184,7 +184,7 @@ function VocabularyEditor({ lessonId, initialVocabulary }: {
                 <button
                   type="button"
                   onClick={() => remove(i)}
-                  className="absolute top-3 right-3 text-destructive/50 hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-3 right-3 text-destructive/50 hover:text-destructive opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -673,12 +673,14 @@ export function LessonContentEditor({
   return (
     <div className="space-y-6">
       {/* Header with back button and Delete option */}
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/teacher/courses/${courseId}/edit`)} className="h-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/teacher/courses/${courseId}/edit`)} className="h-8 p-0 sm:px-3 hover:bg-transparent sm:hover:bg-accent">
           <ArrowLeft className="w-4 h-4 mr-1.5" />
           Voltar para o Curso
         </Button>
-        <DeleteLessonButton lessonId={lessonId} courseId={courseId} />
+        <div className="w-full sm:w-auto flex justify-end">
+          <DeleteLessonButton lessonId={lessonId} courseId={courseId} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">

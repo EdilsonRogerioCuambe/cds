@@ -48,7 +48,7 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
   const showQuizTab = lessonType !== "LIVE"
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="space-y-1.5">
@@ -56,11 +56,11 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
             <Link href="/teacher/courses" className="hover:text-foreground transition-colors">Cursos</Link>
             <span>/</span>
-            <Link href={`/teacher/courses/${lesson.module.course.id}/edit`} className="hover:text-foreground transition-colors max-w-[140px] truncate">
+            <Link href={`/teacher/courses/${lesson.module.course.id}/edit`} className="hover:text-foreground transition-colors max-w-[100px] sm:max-w-[140px] truncate">
               {lesson.module.course.title}
             </Link>
             <span>/</span>
-            <span className="text-foreground/60 max-w-[120px] truncate">{lesson.module.title}</span>
+            <span className="text-foreground/60 max-w-[100px] sm:max-w-[120px] truncate">{lesson.module.title}</span>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -101,7 +101,8 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
 
       {/* Tabs */}
       <Tabs defaultValue="content" className="space-y-6">
-        <TabsList className="h-10 gap-1">
+        <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+          <TabsList className="h-10 gap-1 inline-flex w-auto">
           <TabsTrigger value="content" className="flex items-center gap-1.5">
             <TypeIcon className="w-3.5 h-3.5" />
             {lessonType === "NOTES" ? "Notas da Aula" : lessonType === "LIVE" ? "Sessão Ao Vivo" : lessonType === "CHALLENGE" ? "Configuração" : "Conteúdo"}
@@ -124,6 +125,7 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
             </TabsTrigger>
           )}
         </TabsList>
+        </div>
 
         <TabsContent value="content">
           <LessonContentEditor

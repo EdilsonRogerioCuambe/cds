@@ -124,7 +124,7 @@ export function TeacherDashboard({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <TeacherStatCard
           icon={Users}
           label="Active Students"
@@ -168,7 +168,7 @@ export function TeacherDashboard({
       </div>
 
       {/* Charts */}
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold font-display flex items-center gap-2 text-foreground">
@@ -279,11 +279,13 @@ export function TeacherDashboard({
 
       {/* Tabs */}
       <Tabs defaultValue="students" className="space-y-4">
+        <div className="overflow-x-auto pb-2">
         <TabsList>
-          <TabsTrigger value="students">Top Students</TabsTrigger>
-          <TabsTrigger value="lessons">Lesson Management</TabsTrigger>
-          <TabsTrigger value="forum">Forum Moderation</TabsTrigger>
+            <TabsTrigger value="students">Top Students</TabsTrigger>
+            <TabsTrigger value="lessons">Lesson Management</TabsTrigger>
+            <TabsTrigger value="forum">Forum Moderation</TabsTrigger>
         </TabsList>
+        </div>
 
         <TabsContent value="students">
           <Card>
@@ -302,18 +304,18 @@ export function TeacherDashboard({
                     <span className="text-sm font-medium text-muted-foreground w-5 text-center">
                       {i + 1}
                     </span>
-                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
                       {student.avatar}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {student.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         Level {student.level} &middot; {student.lessons} lessons
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className="text-sm font-bold text-foreground">
                         {student.score}%
                       </p>
@@ -349,14 +351,14 @@ export function TeacherDashboard({
                     key={course.id}
                     className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary text-xs font-bold">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary text-xs font-bold shrink-0">
                       {course.level}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">
+                      <p className="text-sm font-medium text-foreground truncate">
                         {course.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {course.totalLessons} lessons &middot; {course.enrolled} students
                       </p>
                     </div>
@@ -382,14 +384,14 @@ export function TeacherDashboard({
                     key={post.id}
                     className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-full bg-muted text-muted-foreground text-xs font-semibold shrink-0">
                       {post.author.avatar}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-foreground truncate">
                         {post.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {post.author.name} &middot; {post.category} &middot;{" "}
                         {post.createdAt}
                       </p>
@@ -397,7 +399,7 @@ export function TeacherDashboard({
                     <Badge variant="outline" className="text-xs shrink-0">
                       {post.replies} replies
                     </Badge>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="shrink-0">
                       Reply
                     </Button>
                   </div>

@@ -24,10 +24,10 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
   if (course.teacherId !== user.id && user.role !== "ADMIN") redirect("/teacher/dashboard")
 
   return (
-    <div className="p-4 lg:p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 py-6 max-w-7xl space-y-8">
+      <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold font-display text-foreground">Editar Curso</h1>
-        <p className="text-muted-foreground mt-1">Gerencie a estrutura e o conteúdo do curso</p>
+        <p className="text-muted-foreground">Gerencie a estrutura e o conteúdo do curso</p>
       </div>
       <CourseEditor initialData={course} />
     </div>
