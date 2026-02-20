@@ -261,16 +261,26 @@ export async function updateLesson(lessonId: string, data: {
   vocabulary?: any
   published?: boolean
   metadata?: any
+  scheduledAt?: string | null
+  meetingUrl?: string | null
+  meetingPlatform?: string | null
 }) {
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
 
+  const updateData: any = {
+    ...data,
+    duration: data.duration ? Math.round(data.duration) : undefined,
+  }
+
+  // Handle nullable date
+  if ("scheduledAt" in data) {
+    updateData.scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null
+  }
+
   const lesson = await prisma.lesson.update({
     where: { id: lessonId },
-    data: {
-      ...data,
-      duration: data.duration ? Math.round(data.duration) : undefined
-    },
+    data: updateData,
     include: { module: true }
   })
 
