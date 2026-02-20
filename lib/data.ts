@@ -155,44 +155,129 @@ export async function getStudentStats(): Promise<StudentStats | null> {
   const user = await getCurrentUser()
   if (!user) return null
 
-  // Fetch real progress
-  const completedLessons = await prisma.progress.count({
+  // 1. Fetch real progress
+  const completedProgress = await prisma.progress.findMany({
     where: {
       userId: user.id,
       completed: true
+    },
+    include: {
+      lesson: {
+        select: {
+          vocabulary: true, // For words learned
+          duration: true    // For exact duration
+        }
+      }
     }
   })
 
-  // Fetch total lessons available
+  const completedLessonsCount = completedProgress.length
+
+  // 2. Fetch total lessons available
   const totalLessons = await prisma.lesson.count()
 
-  // Calculate quiz avg score
+  // 3. Calculate Quiz Average Score
+  // Only consider standard quizzes for the average
   const quizAttempts = await prisma.quizAttempt.findMany({
     where: { userId: user.id },
-    select: { score: true }
+    include: { quiz: { select: { type: true } } }
   })
+
+  // Filter for 'standard' or graded quizzes if needed, for now average all
   const avgScore = quizAttempts.length > 0
     ? quizAttempts.reduce((acc, curr) => acc + curr.score, 0) / quizAttempts.length
     : 0
 
-  // Calculate total hours learned from Progress
+  // 4. Calculate Total Hours Learned
+  // Use watchTime from Progress for video lessons, set constant for others?
+  // Current logic uses watchTime which is updated by video player
   const allProgress = await prisma.progress.findMany({
     where: { userId: user.id },
     select: { watchTime: true }
   })
   const totalWatchSeconds = allProgress.reduce((acc, curr) => acc + curr.watchTime, 0)
+
+  // Convert to hours (e.g. 1.5 hours) for display, or minutes if favored
+  // UI displays "Horas Aprendidas", assume formatDuration handles it
   const hoursLearned = Math.round((totalWatchSeconds / 3600) * 10) / 10
+
+  // 5. Calculate Words Learned
+  // Count unique vocabulary words from completed lessons
+  let wordsLearned = 0
+  const uniqueWords = new Set<string>()
+
+  completedProgress.forEach(p => {
+    // Check if vocabulary is the direct array OR { words: [...] }
+    const vocabData = p.lesson.vocabulary as any
+    const wordList = Array.isArray(vocabData)
+      ? vocabData
+      : (vocabData?.words && Array.isArray(vocabData.words))
+        ? vocabData.words
+        : []
+
+    if (wordList.length > 0) {
+      wordList.forEach((w: any) => {
+        if (w.word && !uniqueWords.has(w.word.toLowerCase())) {
+          uniqueWords.add(w.word.toLowerCase())
+          wordsLearned++
+        }
+      })
+    }
+  })
+
+  // 6. Calculate Streak
+  // Logic: Consecutive days with at least one ActivityLog
+  const activityLogs = await prisma.activityLog.findMany({
+    where: { userId: user.id },
+    select: { createdAt: true },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  // Simplify: Group by YYYY-MM-DD string to avoid timezone/time issues
+  const uniqueDaysList = Array.from(new Set(
+    activityLogs.map(log => log.createdAt.toISOString().split('T')[0])
+  )).sort((a, b) => b.localeCompare(a)) // Sort desc
+
+  let streak = 0
+  if (uniqueDaysList.length > 0) {
+    const todayStr = new Date().toISOString().split('T')[0]
+    const yesterdayDate = new Date()
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+    const yesterdayStr = yesterdayDate.toISOString().split('T')[0]
+
+    // A streak continues if the most recent activity was today or yesterday
+    if (uniqueDaysList[0] === todayStr || uniqueDaysList[0] === yesterdayStr) {
+      streak = 1 // Start with the most recent day
+
+      // Count backwards from the most recent day
+      for (let i = 0; i < uniqueDaysList.length - 1; i++) {
+        const current = new Date(uniqueDaysList[i])
+        const prev = new Date(uniqueDaysList[i + 1])
+
+        // Calculate difference in days
+        const diffTime = current.getTime() - prev.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        if (diffDays === 1) {
+          streak++
+        } else {
+          break // Streak broken
+        }
+      }
+    }
+  }
+
 
   return {
     currentLevel: (user.currentLevel as Level) || "A1",
     xp: user.xp || 0,
     xpToNext: 3000,
-    streak: user.streak || 0,
-    lessonsCompleted: completedLessons,
+    streak: streak,
+    lessonsCompleted: completedLessonsCount,
     totalLessons: totalLessons || 120,
     quizAvgScore: Math.round(avgScore),
     hoursLearned,
-    wordsLearned: 0,
+    wordsLearned,
   }
 }
 
@@ -223,28 +308,83 @@ export async function getForumPosts(): Promise<ForumPost[]> {
 }
 
 export async function getBadges(): Promise<Badge[]> {
-  // Static for now, can be moved to DB later
-  return [
-    { id: "1", name: "First Step", description: "Complete your first lesson", icon: "footprints", earned: true, earnedDate: "2025-08-15" },
-    { id: "2", name: "Week Warrior", description: "7-day streak", icon: "flame", earned: true, earnedDate: "2025-09-02" },
-    { id: "3", name: "Quiz Master", description: "Score 100% on 5 quizzes", icon: "trophy", earned: true, earnedDate: "2025-09-20" },
-    { id: "4", name: "Word Collector", description: "Learn 500 vocabulary words", icon: "book-open", earned: true, earnedDate: "2025-10-10" },
-    { id: "5", name: "Grammar Pro", description: "Complete all Grammar modules in B1", icon: "check-circle", earned: false },
-    { id: "6", name: "Polyglot", description: "Reach C1 level", icon: "globe", earned: false },
-  ]
+  const user = await getCurrentUser()
+  if (!user) return []
+
+  const allAchievements = await prisma.achievement.findMany()
+  const userAchievements = await prisma.userAchievement.findMany({
+    where: { userId: user.id },
+    include: { achievement: true }
+  })
+
+  // Map to Badge interface
+  return allAchievements.map(ach => {
+    const earnedRecord = userAchievements.find(ua => ua.achievementId === ach.id)
+    return {
+      id: ach.id,
+      name: ach.name,
+      description: ach.description,
+      icon: ach.icon,
+      earned: !!earnedRecord,
+      earnedDate: earnedRecord ? earnedRecord.earnedAt.toISOString().split('T')[0] : undefined
+    }
+  })
 }
 
 export async function getRecentActivity() {
   const user = await getCurrentUser()
   if (!user) return []
 
-  // Fetch real activity (Progress, QuizAttempt)
-  // For now, return mock but it's ready to be swapped
-  return [
-    { id: "1", type: "lesson", title: "Past Perfect Continuous", time: "2 hours ago", xp: 25 },
-    { id: "2", type: "quiz", title: "Vocabulary Quiz: Travel", time: "5 hours ago", xp: 40 },
-    { id: "3", type: "forum", title: "Posted in Grammar Help", time: "1 day ago", xp: 10 },
-  ]
+  // Fetch real activity
+  const logs = await prisma.activityLog.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+    take: 5
+  })
+
+  return logs.map(log => {
+    const meta = log.metadata as any || {}
+    let url = "#"
+
+    if (log.type === "LESSON_COMPLETE" && meta.lessonId) {
+      url = `/student/lesson/${meta.lessonId}`
+    } else if (log.type === "QUIZ_COMPLETE") {
+      url = meta.lessonId ? `/student/lesson/${meta.lessonId}` : `/student/quiz/${meta.quizId}`
+    } else if (log.type === "FORUM_POST" && meta.postId) {
+      url = `/student/forum/${meta.postId}`
+    } else if (log.type === "ACHIEVEMENT_EARNED") {
+      url = "/student/dashboard" // Achievement links to dashboard where badges are
+    }
+
+    return {
+      id: log.id,
+      type: mapActivityTypeToIconType(log.type),
+      title: log.title,
+      time: formatTimeAgo(log.createdAt),
+      xp: log.xpEarned,
+      url
+    }
+  })
+}
+
+function mapActivityTypeToIconType(type: string): string {
+  switch (type) {
+    case "LESSON_COMPLETE": return "lesson"
+    case "QUIZ_COMPLETE": return "quiz"
+    case "FORUM_POST": return "forum"
+    case "ACHIEVEMENT_EARNED": return "achievement"
+    default: return "book"
+  }
+}
+
+function formatTimeAgo(date: Date): string {
+  const now = new Date()
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+  if (diffInSeconds < 60) return "just now"
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+  return `${Math.floor(diffInSeconds / 86400)}d ago`
 }
 
 export async function getWeeklyProgress() {

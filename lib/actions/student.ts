@@ -1,6 +1,8 @@
 "use server"
 
+import { ActivityType } from "@prisma/client"
 import { revalidatePath } from "next/cache"
+import { checkAndAwardAchievements } from "../achievements"
 import { getCurrentUser } from "../auth"
 import prisma from "../prisma"
 
@@ -76,8 +78,84 @@ export async function completeLesson(lessonId: string) {
     data: { xp: { increment: 25 } },
   })
 
+  // Create Activity Log
+  await prisma.activityLog.create({
+    data: {
+      userId: user.id,
+      type: ActivityType.LESSON_COMPLETE,
+      title: "Aula Concluída", // Or fetch lesson title if preferred
+      xpEarned: 25,
+      metadata: { lessonId }
+    }
+  })
+
+  // Also log some study time if it's a NOTES/CHALLENGE lesson and no watchTime exists
+  const progress = await prisma.progress.findUnique({
+    where: { userId_lessonId: { userId: user.id, lessonId } }
+  })
+
+  if (progress && progress.watchTime < 300) { // If less than 5 mins, add 5 mins for reading/doing
+     await prisma.progress.update({
+       where: { id: progress.id },
+       data: { watchTime: { increment: 300 } }
+     })
+     await logDailyStudyTime(5)
+  }
+
+  // Check Achievements
+  await checkAndAwardAchievements(user.id)
+
   revalidatePath("/student/dashboard")
+  revalidatePath("/(student)/student/dashboard", "page")
   revalidatePath("/student/courses")
+}
+
+export async function saveQuizAttempt(quizId: string, score: number, totalQuestions: number, timeSpent: number) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+
+  // Find lessonId if not provided (quizzes always belong to a lesson in this schema)
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: quizId },
+    select: { lessonId: true }
+  })
+
+  const attempt = await prisma.quizAttempt.create({
+    data: {
+      userId: user.id,
+      quizId,
+      score: totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0, // stored as percentage
+      passed: totalQuestions > 0 ? (score / totalQuestions) >= 0.7 : false, // 70% passing grade
+      answers: {
+        rawScore: score,
+        totalQuestions,
+        timeSpent
+      }
+    }
+  })
+
+  // Create Activity Log with lessonId in metadata for better navigation
+  await prisma.activityLog.create({
+    data: {
+      userId: user.id,
+      type: ActivityType.QUIZ_COMPLETE,
+      title: `Quiz Concluído: ${totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0}%`,
+      xpEarned: score * 5,
+      metadata: { quizId, attemptId: attempt.id, lessonId: quiz?.lessonId }
+    }
+  })
+
+  // Award XP
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { xp: { increment: score * 5 } },
+  })
+
+  // Check Achievements
+  await checkAndAwardAchievements(user.id)
+
+  revalidatePath("/student/dashboard")
+  return attempt
 }
 
 export async function getNextLesson(currentLessonId: string) {

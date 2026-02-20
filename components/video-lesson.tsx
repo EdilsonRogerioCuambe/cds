@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { completeLesson, syncLessonProgress } from "@/lib/actions/student"
+import { completeLesson, saveQuizAttempt, syncLessonProgress } from "@/lib/actions/student"
 import { cn } from "@/lib/utils"
 import {
     BookOpen,
@@ -256,7 +256,7 @@ function LiveLesson({
       {/* Main Card */}
       <Card className={cn("overflow-hidden border-2 transition-all", isLive ? "border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]" : "border-border")}>
         <CardContent className="p-0">
-          <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-8 sm:p-12 text-center space-y-6">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-6 sm:p-12 text-center space-y-6">
             <div className={cn("flex items-center justify-center w-20 h-20 rounded-2xl mx-auto", isLive ? "bg-red-500/20 text-red-400" : "bg-primary/10 text-primary")}>
               <Video className="w-10 h-10" />
             </div>
@@ -370,15 +370,24 @@ function ChallengeLesson({
     return () => clearInterval(interval)
   }, [started, submitted])
 
-  const handleSubmit = () => {
+  const [hasSaved, setHasSaved] = useState(false)
+
+  const handleSubmit = async () => {
     if (!quiz) return
     let correct = 0
     questions.forEach((q, i) => {
-      if (answers[i] === q.correctAnswer) correct++
+      const userAns = answers[i] || ""
+      const isCorrect = userAns.toLowerCase().trim() === (q.correctAnswer || "").toLowerCase().trim()
+      if (isCorrect) correct++
     })
     const pct = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
     setScore(pct)
     setSubmitted(true)
+
+    if (!hasSaved) {
+      await saveQuizAttempt(quiz.id, correct, questions.length, totalTime - timeLeft)
+      setHasSaved(true)
+    }
   }
 
   const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
@@ -409,33 +418,48 @@ function ChallengeLesson({
           <h1 className="text-2xl sm:text-3xl font-bold font-display">{currentLesson.title}</h1>
           <p className="text-muted-foreground text-sm mt-1">{currentLesson.module} · Nível {currentLesson.level}</p>
         </div>
-        <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-amber-500/10 text-amber-400 mx-auto">
-              <Trophy className="w-10 h-10" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-foreground mb-2">{quiz.title}</h2>
-              {quiz.description && <p className="text-sm text-muted-foreground">{quiz.description}</p>}
-            </div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="p-3 bg-background/50 rounded-xl">
-                <p className="text-lg font-bold text-foreground">{questions.length}</p>
-                <p className="text-xs text-muted-foreground">Questões</p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-xl">
-                <p className="text-lg font-bold text-foreground font-mono">{formatTime(totalTime)}</p>
-                <p className="text-xs text-muted-foreground">Tempo</p>
-              </div>
-              <div className="p-3 bg-background/50 rounded-xl">
-                <p className="text-lg font-bold text-amber-400">+{xpReward} XP</p>
-                <p className="text-xs text-muted-foreground">Recompensa</p>
+        <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-amber-500/10 shadow-lg shadow-amber-500/5">
+          <CardContent className="p-8 text-center space-y-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full" />
+              <div className="relative flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/20 text-amber-500 mx-auto border border-amber-500/20 shadow-inner">
+                <Trophy className="w-12 h-12" />
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">Pontuação mínima para passar: <span className="text-foreground font-bold">{passingScore}%</span></p>
-            <Button size="lg" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold" onClick={() => setStarted(true)}>
-              <Zap className="w-5 h-5" /> Iniciar Desafio
-            </Button>
+
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground">{quiz.title}</h2>
+              {quiz.description && <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">{quiz.description}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center max-w-xl mx-auto">
+              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
+                <p className="text-2xl font-bold font-display text-foreground">{questions.length}</p>
+                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">Questões</p>
+              </div>
+              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
+                <p className="text-2xl font-bold font-display text-foreground font-mono">{formatTime(totalTime)}</p>
+                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">Tempo</p>
+              </div>
+              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
+                <p className="text-2xl font-bold font-display text-amber-500">+{xpReward}</p>
+                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">XP Recompensa</p>
+              </div>
+            </div>
+
+            <div className="pt-4 space-y-4">
+              <p className="text-sm font-medium text-muted-foreground">
+                Pontuação para aprovação: <span className="text-foreground font-bold">{passingScore}%</span>
+              </p>
+              <Button
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95"
+                onClick={() => setStarted(true)}
+              >
+                <Zap className="w-5 h-5 fill-current" />
+                Iniciar Desafio
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -447,24 +471,49 @@ function ChallengeLesson({
       <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
         <Card className={cn("overflow-hidden border-2", passed ? "border-success/30 bg-gradient-to-br from-success/5 to-success/10" : "border-destructive/30 bg-gradient-to-br from-destructive/5 to-destructive/10")}>
           <CardContent className="p-8 text-center space-y-4">
-            <div className={cn("flex items-center justify-center w-20 h-20 rounded-2xl mx-auto", passed ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")}>
-              {passed ? <Trophy className="w-10 h-10" /> : <Zap className="w-10 h-10" />}
+            <div className={cn(
+              "flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 border-4 shadow-xl",
+              passed
+                ? "bg-gradient-to-br from-success/20 to-success/5 border-success/20 text-success shadow-success/10"
+                : "bg-gradient-to-br from-destructive/20 to-destructive/5 border-destructive/20 text-destructive shadow-destructive/10"
+            )}>
+              {passed ? <Trophy className="w-12 h-12" /> : <Zap className="w-12 h-12" />}
             </div>
-            <h2 className="text-2xl font-bold">{passed ? "Desafio Concluído! 🎉" : "Quase lá!"}</h2>
-            <div className="space-y-2">
-              <p className="text-4xl font-black font-mono">{score}%</p>
-              <Progress value={score} className="h-3 max-w-xs mx-auto" />
-              <p className="text-sm text-muted-foreground">{Math.round(score / 100 * questions.length)} de {questions.length} corretas</p>
+
+            <div className="space-y-1">
+              <h2 className="text-3xl font-bold font-display">{passed ? "Desafio Concluído! 🎉" : "Quase lá..."}</h2>
+              <p className="text-muted-foreground">{passed ? "Você dominou este tópico!" : "Não desista, tente novamente para melhorar."}</p>
             </div>
+
+            <div className="py-6 space-y-4">
+              <div className="flex items-end justify-center gap-2">
+                <span className="text-6xl font-black font-mono tracking-tighter">{score}%</span>
+                <span className="text-lg text-muted-foreground font-medium mb-3">acerto</span>
+              </div>
+              <Progress
+                value={score}
+                className={cn("h-4 max-w-sm mx-auto rounded-full", passed ? "bg-success/10" : "bg-destructive/10")}
+                // indicatorClassName={passed ? "bg-success" : "bg-destructive"} // Assuming Progress component supports this or customize it
+              />
+              <p className="text-sm font-medium text-muted-foreground border border-border bg-muted/30 px-4 py-2 rounded-full w-fit mx-auto">
+                Você acertou <span className={passed ? "text-success" : "text-destructive"}>{Math.round(score / 100 * questions.length)}</span> de {questions.length} questões
+              </p>
+            </div>
+
             {passed && (
-              <div className="flex items-center justify-center gap-2 p-3 bg-amber-500/10 rounded-xl">
-                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                <span className="text-sm font-bold text-amber-400">+{xpReward} XP desbloqueados!</span>
+              <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl max-w-sm mx-auto">
+                <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
+                  <Star className="w-6 h-6 fill-current" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-amber-500 uppercase tracking-wider">Recompensa</p>
+                  <p className="text-lg font-bold text-foreground">+{xpReward} XP Desbloqueados</p>
+                </div>
               </div>
             )}
             <div className="flex gap-3 justify-center pt-2">
               {!passed && (
-                <Button variant="outline" onClick={() => { setStarted(false); setSubmitted(false); setAnswers({}); setTimeLeft(totalTime); setCurrentQ(0) }}>
+                <Button variant="outline" onClick={() => { setStarted(false); setSubmitted(false); setAnswers({}); setTimeLeft(totalTime); setCurrentQ(0); setHasSaved(false); }}>
                   Tentar Novamente
                 </Button>
               )}
@@ -505,20 +554,47 @@ function ChallengeLesson({
         <CardContent className="p-6 sm:p-8 space-y-6">
           <p className="text-base sm:text-lg font-semibold text-foreground leading-relaxed">{q.question}</p>
           <div className="space-y-3">
-            {options.map((opt: string) => (
-              <button
-                key={opt}
-                onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
-                className={cn(
-                  "w-full text-left p-4 rounded-xl border-2 transition-all text-sm font-medium",
-                  answers[currentQ] === opt
-                    ? "border-amber-500 bg-amber-500/10 text-foreground"
-                    : "border-border hover:border-amber-500/50 hover:bg-muted/50 text-foreground/80"
-                )}
-              >
-                {opt}
-              </button>
-            ))}
+            {options.length > 0 ? (
+              options.map((opt: string, i: number) => (
+                <button
+                  key={opt}
+                  onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
+                  className={cn(
+                    "w-full text-left p-5 rounded-xl border-2 transition-all relative group overflow-hidden",
+                    answers[currentQ] === opt
+                      ? "border-amber-500 bg-amber-500/10 text-foreground shadow-[0_0_0_1px_rgba(245,158,11,0.5)]"
+                      : "border-border hover:border-amber-500/50 hover:bg-muted/30 text-foreground/80 hover:shadow-md"
+                  )}
+                >
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold border transition-colors",
+                      answers[currentQ] === opt
+                        ? "bg-amber-500 border-amber-500 text-white"
+                        : "bg-muted border-border text-muted-foreground group-hover:border-amber-500/50 group-hover:text-amber-500"
+                    )}>
+                      {String.fromCharCode(65 + i)}
+                    </div>
+                    <span className="font-medium text-base">{opt}</span>
+                  </div>
+                  {answers[currentQ] === opt && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="space-y-4">
+                <Input
+                  placeholder="Escreva sua resposta aqui..."
+                  value={answers[currentQ] || ""}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnswers(a => ({ ...a, [currentQ]: e.target.value }))}
+                  className="h-14 text-lg border-2 focus-visible:ring-amber-500 border-amber-500/20 focus:border-amber-500"
+                />
+                <p className="text-xs text-muted-foreground italic">
+                  Dica: Verifique a ortografia antes de submeter.
+                </p>
+              </div>
+            )}
           </div>
           <div className="flex justify-between pt-2">
             <Button variant="ghost" size="sm" onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}>
@@ -549,19 +625,27 @@ function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [submitted, setSubmitted] = useState(false)
   const [score, setScore] = useState(0)
+  const [hasSaved, setHasSaved] = useState(false)
 
   if (!questions.length) return null
 
   const xp = quiz.points || 50
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     let correct = 0
     questions.forEach((q: any, i: number) => {
-      if (answers[i] === q.answer || answers[i] === q.correctAnswer) correct++
+      const userAns = answers[i] || ""
+      const isCorrect = userAns.toLowerCase().trim() === (q.answer || q.correctAnswer || "").toLowerCase().trim()
+      if (isCorrect) correct++
     })
     const pct = Math.round((correct / questions.length) * 100)
     setScore(pct)
     setSubmitted(true)
+
+    if (!hasSaved) {
+       await saveQuizAttempt(quiz.id, correct, questions.length, 0)
+       setHasSaved(true)
+    }
   }
 
   const handleReset = () => {
@@ -569,6 +653,7 @@ function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
     setAnswers({})
     setSubmitted(false)
     setScore(0)
+    setHasSaved(false)
   }
 
   const q = questions[currentQ]
@@ -582,26 +667,40 @@ function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
       {/* Header */}
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-all text-left group"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div className={cn(
-            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-            submitted && score >= 70 ? "bg-success/10 text-success" : "bg-amber-500/10 text-amber-500"
+            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border shadow-sm transition-all group-hover:scale-105",
+            submitted && score >= 70
+              ? "bg-gradient-to-br from-success/20 to-success/10 border-success/30 text-success"
+              : "bg-gradient-to-br from-amber-500/20 to-amber-500/5 border-amber-500/30 text-amber-500"
           )}>
-            {submitted && score >= 70 ? <Trophy className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+            {submitted && score >= 70 ? <Trophy className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
           </div>
           <div>
-            <p className="text-sm font-semibold text-foreground">{quiz.title || "Exercícios da Aula"}</p>
-            <p className="text-xs text-muted-foreground">
-              {submitted ? `${score}% · ` : ""}{questions.length} questões · +{xp} XP
-            </p>
+            <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{quiz.title || "Mini-Desafio"}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-medium bg-background border px-1.5 py-0.5 rounded text-muted-foreground">
+                {questions.length} Q
+              </span>
+              <span className="text-[10px] font-bold text-amber-500">+{xp} XP</span>
+              {submitted && (
+                <span className={cn("text-[10px] font-bold", score >= 70 ? "text-success" : "text-destructive")}>
+                  • {score}%
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {submitted && score >= 70 ? (
-          <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-[10px]">Concluído</Badge>
+          <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-success" />
+          </div>
         ) : (
-          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+          <div className="w-8 h-8 rounded-full bg-background border flex items-center justify-center group-hover:border-primary/50 transition-colors">
+            <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform duration-300", open && "rotate-180")} />
+          </div>
         )}
       </button>
 
@@ -617,20 +716,36 @@ function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
           <p className="text-sm font-medium leading-snug">{q?.question}</p>
 
           <div className="space-y-2">
-            {options.map((opt: string) => (
-              <button
-                key={opt}
-                onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
-                className={cn(
-                  "w-full text-left p-3 rounded-xl border-2 text-xs font-medium transition-all",
-                  answers[currentQ] === opt
-                    ? "border-amber-500 bg-amber-500/10 text-foreground"
-                    : "border-border hover:border-amber-500/40 hover:bg-muted/40 text-foreground/80"
-                )}
-              >
-                {opt}
-              </button>
-            ))}
+            {options.length > 0 ? (
+              options.map((opt: string) => (
+                <button
+                  key={opt}
+                  onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
+                  className={cn(
+                    "w-full text-left p-3 rounded-xl border text-xs font-medium transition-all relative overflow-hidden",
+                    answers[currentQ] === opt
+                      ? "border-amber-500 bg-amber-500/10 text-foreground shadow-sm"
+                      : "border-border hover:border-amber-500/40 hover:bg-muted/40 text-foreground/80"
+                  )}
+                >
+                  <div className="flex gap-2">
+                    <span className={cn(
+                      "font-bold shrink-0",
+                      answers[currentQ] === opt ? "text-amber-600" : "text-muted-foreground"
+                    )}>{String.fromCharCode(65 + (options.indexOf(opt)))}.</span>
+                    {opt}
+                  </div>
+                  {answers[currentQ] === opt && <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />}
+                </button>
+              ))
+            ) : (
+              <Input
+                placeholder="Resposta..."
+                value={answers[currentQ] || ""}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnswers(a => ({ ...a, [currentQ]: e.target.value }))}
+                className="text-xs border-amber-500/20 focus-visible:ring-amber-500"
+              />
+            )}
           </div>
 
           <div className="flex justify-between pt-1">

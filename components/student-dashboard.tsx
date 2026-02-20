@@ -133,7 +133,7 @@ export function StudentDashboard({
         <CardContent className="p-6 relative">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="flex items-center gap-4 flex-1">
-              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground font-display text-2xl font-bold shadow-lg shadow-primary/20">
+              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary text-primary-foreground font-display text-2xl font-bold shadow-lg shadow-primary/20 shrink-0">
                 {stats.currentLevel}
               </div>
               <div>
@@ -145,7 +145,7 @@ export function StudentDashboard({
                 </p>
               </div>
             </div>
-            <div className="flex-1 max-w-xs">
+            <div className="flex-1 w-full max-w-xs">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-primary">Progresso do Nível</span>
                 <span className="text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ export function StudentDashboard({
         />
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Weekly Chart */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
@@ -283,7 +283,7 @@ export function StudentDashboard({
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
         <Card>
           <CardHeader className="pb-2">
@@ -294,11 +294,12 @@ export function StudentDashboard({
           <CardContent>
             <div className="space-y-1">
               {recentActivity.map((item) => (
-                <div
+                <Link
                   key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                  href={item.url || "#"}
+                  className={`flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors ${!item.url || item.url === '#' ? 'cursor-default' : 'cursor-pointer'}`}
                 >
-                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted text-muted-foreground">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted text-muted-foreground shrink-0">
                     <ActivityIcon type={item.type} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -313,7 +314,7 @@ export function StudentDashboard({
                   >
                     <Zap className="w-3 h-3 mr-1" />+{item.xp} XP
                   </Badge>
-                </div>
+                </Link>
               ))}
             </div>
           </CardContent>
@@ -344,7 +345,7 @@ export function StudentDashboard({
                   }`}
                 >
                   <div
-                    className={`flex items-center justify-center w-10 h-10 rounded-xl ${
+                    className={`flex items-center justify-center w-10 h-10 rounded-xl shrink-0 ${
                       badge.earned
                         ? "bg-primary/10 text-primary"
                         : "bg-muted text-muted-foreground"
@@ -379,7 +380,7 @@ export function StudentDashboard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {allCourses
               .filter(c => !c.isEnrolled)
               .slice(0, 3)
@@ -389,7 +390,7 @@ export function StudentDashboard({
                   href="/student/courses"
                   className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/[0.02] transition-all group"
                 >
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors text-xs font-bold">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors text-xs font-bold shrink-0">
                     {rec.level}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -400,11 +401,11 @@ export function StudentDashboard({
                       {rec.level} &middot; {rec.totalLessons} lições
                     </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
                 </Link>
               ))}
             {allCourses.filter(c => !c.isEnrolled).length === 0 && (
-              <p className="col-span-3 text-center text-sm text-muted-foreground py-4 italic">
+              <p className="col-span-1 sm:col-span-3 text-center text-sm text-muted-foreground py-4 italic">
                 Você já está inscrito em todos os cursos disponíveis!
               </p>
             )}
