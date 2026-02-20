@@ -833,7 +833,11 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                                 <Edit className="w-3.5 h-3.5" />
                                               </Link>
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => confirmDelete(lesson.id, "lesson")}>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => {
+                                                 e.stopPropagation()
+                                                 e.preventDefault()
+                                                 confirmDelete(lesson.id, "lesson")
+                                               }}>
                                               <Trash2 className="w-3.5 h-3.5" />
                                             </Button>
                                           </div>
