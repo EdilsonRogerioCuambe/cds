@@ -21,7 +21,7 @@ import {
     Trash2,
     Zap,
 } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
@@ -55,7 +55,13 @@ function VocabularyEditor({ lessonId, initialVocabulary }: {
   lessonId: string
   initialVocabulary?: any[]
 }) {
-  const [vocab, setVocab] = useState<any[]>(initialVocabulary || [])
+  const [vocab, setVocab] = useState<any[]>(() =>
+    Array.isArray(initialVocabulary) ? initialVocabulary : []
+  )
+  // Resync when the server prop arrives (Next.js hydration)
+  useEffect(() => {
+    if (Array.isArray(initialVocabulary)) setVocab(initialVocabulary)
+  }, [initialVocabulary])
   const [saving, setSaving] = useState(false)
 
   const add = () => setVocab(v => [...v, { word: "", definition: "", example: "" }])
@@ -323,7 +329,7 @@ function NotesEditor({ lessonId, initialContent, initialVocabulary }: {
           </div>
         </CardContent>
       </Card>
-    
+
 
       <VocabularyEditor lessonId={lessonId} initialVocabulary={initialVocabulary} />
     </div>
