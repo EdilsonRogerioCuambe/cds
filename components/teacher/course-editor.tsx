@@ -773,6 +773,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-destructive ml-1"
+                                  onPointerDown={(e) => e.stopPropagation()}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     confirmDelete(module.id, "module")
@@ -833,13 +834,19 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                                 <Edit className="w-3.5 h-3.5" />
                                               </Link>
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => {
+                                             <Button
+                                               variant="ghost"
+                                               size="icon"
+                                               className="h-8 w-8 text-destructive"
+                                               onPointerDown={(e) => e.stopPropagation()}
+                                               onClick={(e) => {
                                                  e.stopPropagation()
                                                  e.preventDefault()
                                                  confirmDelete(lesson.id, "lesson")
-                                               }}>
-                                              <Trash2 className="w-3.5 h-3.5" />
-                                            </Button>
+                                               }}
+                                             >
+                                               <Trash2 className="w-3.5 h-3.5" />
+                                             </Button>
                                           </div>
                                         </div>
                                       </SortableItem>
