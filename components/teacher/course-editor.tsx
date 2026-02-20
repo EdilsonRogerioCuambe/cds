@@ -65,8 +65,8 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
     if (initialData) {
       return {
         ...initialData,
-        highlights: Array.isArray(initialData.highlights) ? initialData.highlights.join("\n") : (initialData.highlights || ""),
-        requirements: Array.isArray(initialData.requirements) ? initialData.requirements.join("\n") : (initialData.requirements || ""),
+        highlights: Array.isArray(initialData.highlights) ? initialData.highlights : [],
+        requirements: Array.isArray(initialData.requirements) ? initialData.requirements : [],
         thumbnailUrl: initialData.thumbnailUrl || "",
         category: initialData.category || "",
         duration: initialData.duration || "",
@@ -80,11 +80,14 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
       thumbnailUrl: "",
       category: "",
       duration: "",
-      highlights: "",
-      requirements: "",
+      highlights: [] as string[],
+      requirements: [] as string[],
       modules: []
     }
   })
+
+  const [highlightInput, setHighlightInput] = useState("")
+  const [requirementInput, setRequirementInput] = useState("")
 
   // Modal State
   const [moduleModalOpen, setModuleModalOpen] = useState(false)
@@ -126,12 +129,6 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
 
   const handleSaveBasic = async () => {
     setLoading(true)
-    const highlights = typeof course.highlights === "string" ? course.highlights : ""
-    const requirements = typeof course.requirements === "string" ? course.requirements : ""
-
-    const highlightArray = highlights.split("\n").filter((line: string) => line.trim() !== "")
-    const requirementArray = requirements.split("\n").filter((line: string) => line.trim() !== "")
-
     try {
       if (course.id) {
         await updateCourse(course.id, {
@@ -142,8 +139,8 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
           thumbnailUrl: course.thumbnailUrl,
           category: course.category,
           duration: course.duration,
-          highlights: highlightArray,
-          requirements: requirementArray
+          highlights: course.highlights,
+          requirements: course.requirements,
         })
         toast.success("Informações básicas salvas")
       } else {
@@ -155,8 +152,8 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
           thumbnailUrl: course.thumbnailUrl,
           category: course.category,
           duration: course.duration,
-          highlights: highlightArray,
-          requirements: requirementArray
+          highlights: course.highlights,
+          requirements: course.requirements,
         })
         toast.success("Curso criado com sucesso")
         router.push(`/teacher/courses/${newCourse.id}/edit`)
@@ -495,31 +492,116 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Destaques e Requisitos</CardTitle>
-              <CardDescription>O que o aluno vai aprender e o que ele precisa saber.</CardDescription>
+              <CardTitle>O que os Alunos vão Aprender</CardTitle>
+              <CardDescription>Adicione os tópicos que serão ensinados. Pressione Enter ou clique em + para adicionar.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="highlights">O que você vai aprender? (Um por linha)</Label>
-                <Textarea
-                  id="highlights"
-                  name="highlights"
-                  value={course.highlights}
-                  onChange={handleChange}
-                  placeholder="Ex: Domine o vocabulário técnico de TI&#10;Melhore sua leitura de documentação"
-                  rows={5}
-                />
+              {/* Highlights input */}
+              <div className="space-y-3">
+                <Label>Destaques da Aprendizagem</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Domine o vocabulário técnico de TI"
+                    value={highlightInput}
+                    onChange={(e) => setHighlightInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && highlightInput.trim()) {
+                        e.preventDefault()
+                        setCourse((prev: any) => ({ ...prev, highlights: [...prev.highlights, highlightInput.trim()] }))
+                        setHighlightInput("")
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (highlightInput.trim()) {
+                        setCourse((prev: any) => ({ ...prev, highlights: [...prev.highlights, highlightInput.trim()] }))
+                        setHighlightInput("")
+                      }
+                    }}
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+                {course.highlights?.length > 0 && (
+                  <div className="space-y-1.5 p-3 bg-muted/30 rounded-lg border">
+                    {course.highlights.map((item: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 group">
+                        <div className="flex-shrink-0 w-5 h-5 mt-0.5 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                          <svg className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor"><path d="M1 6l3.5 3.5L11 2.5"/></svg>
+                        </div>
+                        <p className="flex-1 text-sm text-foreground leading-relaxed">{item}</p>
+                        <button
+                          type="button"
+                          onClick={() => setCourse((prev: any) => ({ ...prev, highlights: prev.highlights.filter((_: string, idx: number) => idx !== i) }))}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto text-muted-foreground hover:text-destructive"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {course.highlights?.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-3 italic border border-dashed rounded-lg">Nenhum destaque adicionado yet</p>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="requirements">Requisitos (Um por linha)</Label>
-                <Textarea
-                  id="requirements"
-                  name="requirements"
-                  value={course.requirements}
-                  onChange={handleChange}
-                  placeholder="Ex: Inglês básico&#10;Algum conhecimento de programação"
-                  rows={3}
-                />
+
+              {/* Requirements input */}
+              <div className="space-y-3 pt-2 border-t">
+                <Label>Requisitos Prévios</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ex: Inglês básico (A1)"
+                    value={requirementInput}
+                    onChange={(e) => setRequirementInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && requirementInput.trim()) {
+                        e.preventDefault()
+                        setCourse((prev: any) => ({ ...prev, requirements: [...prev.requirements, requirementInput.trim()] }))
+                        setRequirementInput("")
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      if (requirementInput.trim()) {
+                        setCourse((prev: any) => ({ ...prev, requirements: [...prev.requirements, requirementInput.trim()] }))
+                        setRequirementInput("")
+                      }
+                    }}
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+                {course.requirements?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {course.requirements.map((item: string, i: number) => (
+                      <Badge
+                        key={i}
+                        variant="secondary"
+                        className="group gap-1.5 py-1.5 px-3 text-xs font-medium cursor-default select-none pr-1.5"
+                      >
+                        {item}
+                        <button
+                          type="button"
+                          onClick={() => setCourse((prev: any) => ({ ...prev, requirements: prev.requirements.filter((_: string, idx: number) => idx !== i) }))}
+                          className="w-4 h-4 rounded-full hover:bg-destructive/20 hover:text-destructive flex items-center justify-center transition-colors"
+                        >
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-3 italic border border-dashed rounded-lg">Nenhum requisito adicionado ainda</p>
+                )}
               </div>
             </CardContent>
           </Card>
