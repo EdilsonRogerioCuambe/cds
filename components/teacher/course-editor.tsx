@@ -99,6 +99,9 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
   const [newLessonMeetingUrl, setNewLessonMeetingUrl] = useState("")
   const [newLessonMeetingPlatform, setNewLessonMeetingPlatform] = useState("zoom")
   const [newLessonScheduledAt, setNewLessonScheduledAt] = useState("")
+  const [newLessonVideoUrl, setNewLessonVideoUrl] = useState("")
+  const [newLessonContent, setNewLessonContent] = useState("")
+  const [newLessonChallengeConfig, setNewLessonChallengeConfig] = useState<any>({ timeLimit: 30, passingScore: 70 })
   const [activeModuleId, setActiveModuleId] = useState<string | null>(null)
 
   // Calculate total seconds from all modules and lessons
@@ -289,9 +292,12 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
         title: newLessonTitle,
         order: (module?.lessons?.length || 0) + 1,
         lessonType: newLessonType,
+        videoUrl: newLessonType === "VIDEO" ? newLessonVideoUrl || undefined : undefined,
+        content: newLessonType === "NOTES" ? newLessonContent || undefined : undefined,
         scheduledAt: newLessonType === "LIVE" && newLessonScheduledAt ? newLessonScheduledAt : undefined,
         meetingUrl: newLessonType === "LIVE" ? newLessonMeetingUrl || undefined : undefined,
         meetingPlatform: newLessonType === "LIVE" ? newLessonMeetingPlatform || undefined : undefined,
+        challengeConfig: newLessonType === "CHALLENGE" ? newLessonChallengeConfig : undefined,
       })
 
       setCourse((prev: any) => ({
@@ -306,6 +312,8 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
       setNewLessonType("VIDEO")
       setNewLessonMeetingUrl("")
       setNewLessonScheduledAt("")
+      setNewLessonVideoUrl("")
+      setNewLessonContent("")
       setLessonModalOpen(false)
       toast.success("Aula adicionada")
     } finally {
@@ -932,6 +940,116 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                 ))}
               </div>
             </div>
+
+            {/* Dynamic Requirements Explanation */}
+            <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-2">
+              <div className="flex items-center gap-2 text-blue-500">
+                <HelpCircle className="w-4 h-4" />
+                <p className="text-xs font-semibold">O que será necessário:</p>
+              </div>
+              <ul className="space-y-1">
+                {newLessonType === "VIDEO" && (
+                  <>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Carregar um vídeo ou fornecer link (YouTube/Vimeo)
+                    </li>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Adicionar notas de apoio opcionais
+                    </li>
+                  </>
+                )}
+                {newLessonType === "NOTES" && (
+                  <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                    <div className="w-1 h-1 rounded-full bg-blue-400" /> Escrever o conteúdo da aula em Markdown
+                  </li>
+                )}
+                {newLessonType === "LIVE" && (
+                  <>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Definir data e hora da transmissão
+                    </li>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Configurar o link da reunião (Zoom/Meet)
+                    </li>
+                  </>
+                )}
+                {newLessonType === "CHALLENGE" && (
+                  <>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Configurar temporizador e pontuação mínima
+                    </li>
+                    <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                      <div className="w-1 h-1 rounded-full bg-blue-400" /> Adicionar questões para o desafio
+                    </li>
+                  </>
+                )}
+                <li className="text-[11px] flex items-center gap-2 text-muted-foreground">
+                  <div className="w-1 h-1 rounded-full bg-blue-400" /> Adicionar vocabulário/termos gramaticais
+                </li>
+              </ul>
+              <p className="text-[10px] text-muted-foreground italic pt-1 border-t border-blue-500/10">
+                Você pode preencher estes detalhes agora ou ajustar depois no editor completo.
+              </p>
+            </div>
+
+            {/* VIDEO extra fields */}
+            {newLessonType === "VIDEO" && (
+              <div className="space-y-2 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <Label className="text-xs">Link do Vídeo (opcional)</Label>
+                <Input
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={newLessonVideoUrl}
+                  onChange={(e) => setNewLessonVideoUrl(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+            )}
+
+            {/* NOTES extra field */}
+            {newLessonType === "NOTES" && (
+              <div className="space-y-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                <Label className="text-xs">Conteúdo da Nota (Markdown)</Label>
+                <Textarea
+                  placeholder="Comece a escrever a sua nota aqui..."
+                  value={newLessonContent}
+                  onChange={(e) => setNewLessonContent(e.target.value)}
+                  className="text-xs leading-relaxed"
+                  rows={4}
+                />
+              </div>
+            )}
+
+            {/* CHALLENGE extra fields */}
+            {newLessonType === "CHALLENGE" && (
+              <div className="grid grid-cols-2 gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tempo Limite (minutos)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 30"
+                    defaultValue={30}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value)
+                      setNewLessonChallengeConfig((prev: any) => ({ ...prev, timeLimit: val }))
+                    }}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Média para Passar (%)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 70"
+                    defaultValue={70}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value)
+                      setNewLessonChallengeConfig((prev: any) => ({ ...prev, passingScore: val }))
+                    }}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* LIVE extra fields */}
             {newLessonType === "LIVE" && (
