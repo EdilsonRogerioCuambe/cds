@@ -1,5 +1,6 @@
 "use client"
 
+import SplashScreen from "@/components/splash-screen"
 import { VideoMetadata } from "@/components/teacher/video-editor"
 import { VideoUpload } from "@/components/teacher/video-upload"
 import { Badge } from "@/components/ui/badge"
