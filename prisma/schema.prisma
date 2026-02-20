@@ -1,0 +1,272 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+model User {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  email         String     @unique
+  name          String?
+  emailVerified Boolean    @default(false)
+  image         String?
+  role          Role       @default(STUDENT)
+  status        UserStatus @default(PENDING)
+
+  // Student metrics
+  points       Int     @default(0)
+  streak       Int     @default(0)
+  xp           Int     @default(0)
+  currentLevel String? @default("A1")
+
+  // Teacher info
+  bio       String?
+  expertise String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Terms and Conditions
+  termsAccepted   Boolean   @default(false)
+  termsAcceptedAt DateTime?
+
+  sessions     Session[]
+  accounts     Account[]
+  enrollments  Enrollment[]
+  quizAttempts QuizAttempt[]
+  progress     Progress[]
+  payments     Payment[]
+  certificates Certificate[]
+  courses      Course[]      @relation("CourseTeacher")
+  studyLogs    StudyLog[]
+}
+
+model StudyLog {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  userId  String @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date    String // YYYY-MM-DD
+  minutes Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  expiresAt DateTime
+  token     String   @unique
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  accountId  String
+  providerId String
+  userId     String @db.ObjectId
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Verification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String
+  price        Float    @default(0)
+  level        String
+  category     String?
+  duration     String?
+  thumbnailUrl String?
+  highlights   String[]
+  requirements String[]
+  published    Boolean  @default(false)
+
+  teacherId String? @db.ObjectId
+  teacher   User?   @relation("CourseTeacher", fields: [teacherId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  modules     Module[]
+  enrollments Enrollment[]
+}
+
+model Module {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  order       Int
+
+  courseId String @db.ObjectId
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  published Boolean @default(false)
+
+  lessons Lesson[]
+}
+
+model Lesson {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  title      String
+  content    String?
+  videoId    String?
+  videoUrl   String?
+  duration   Int? // in seconds
+  order      Int
+  vocabulary Json?
+
+  moduleId String @db.ObjectId
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  published Boolean @default(false)
+  metadata  Json?
+
+  progress Progress[]
+  quizzes  Quiz[]
+}
+
+model Enrollment {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  startDate DateTime         @default(now())
+  endDate   DateTime?
+  status    EnrollmentStatus @default(ACTIVE)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  courseId String @db.ObjectId
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Progress {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  watchTime    Int     @default(0) // in seconds
+  lastPosition Int     @default(0) // in seconds
+  completed    Boolean @default(false)
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lessonId String @db.ObjectId
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+}
+
+model Quiz {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  type        String  @default("standard") // standard, listening, challenge, etc.
+  points      Int     @default(100)
+  questions   Json // Store questions as JSON array for flexibility
+
+  lessonId String @db.ObjectId
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  attempts QuizAttempt[]
+}
+
+model QuizAttempt {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  score   Float
+  passed  Boolean
+  answers Json // Store student answers
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  quizId String @db.ObjectId
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  amount        Float
+  currency      String        @default("BRL")
+  status        PaymentStatus @default(PENDING)
+  method        String? // PIX, CREDIT_CARD, etc.
+  mercadoPagoId String?       @unique
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certificate {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  verificationCode String   @unique
+  pdfUrl           String
+  issueDate        DateTime @default(now())
+
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+}

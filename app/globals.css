@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* White */
+    --foreground: 217 58% 18%; /* Connect Dark Navy #132747 */
+    --card: 0 0% 100%;
+    --card-foreground: 217 58% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 58% 18%;
+    --primary: 217 58% 18%; /* Connect Dark Navy #132747 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 58% 96%;
+    --secondary-foreground: 217 58% 18%;
+    --muted: 217 20% 96%;
+    --muted-foreground: 217 10% 46%;
+    --accent: 163 86% 45%; /* Connect Turquoise #10D79E */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 20% 85%;
+    --input: 217 20% 85%;
+    --ring: 163 86% 45%;
+    --radius: 1rem;
+    --sidebar-background: 0 0% 100%; /* White */
+    --sidebar-foreground: 217 58% 18%; /* Navy */
+    --sidebar-primary: 217 58% 18%; /* Navy */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 58% 96%;
+    --sidebar-accent-foreground: 217 58% 18%;
+    --sidebar-border: 217 20% 90%;
+    --sidebar-ring: 163 86% 45%;
+  }
+
+  .dark {
+    --background: 217 58% 6%;
+    --foreground: 0 0% 98%;
+    --card: 217 58% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 217 58% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 163 86% 45%;
+    --primary-foreground: 217 58% 10%;
+    --secondary: 217 40% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 217 40% 15%;
+    --muted-foreground: 217 10% 65%;
+    --accent: 217 40% 18%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 40% 18%;
+    --input: 217 40% 18%;
+    --ring: 163 86% 45%;
+    --sidebar-background: 217 58% 4%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 163 86% 45%;
+    --sidebar-primary-foreground: 217 58% 10%;
+    --sidebar-accent: 217 40% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 217 40% 15%;
+    --sidebar-ring: 163 86% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/60 backdrop-blur-lg border-border/50;
+  }
+  .gradient-brand {
+    @apply bg-gradient-to-br from-[#10D79E] to-[#132747];
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-[#10D79E] to-[#132747];
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
