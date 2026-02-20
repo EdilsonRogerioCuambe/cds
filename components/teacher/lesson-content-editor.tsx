@@ -325,7 +325,8 @@ function NotesEditor({ lessonId, initialContent, initialVocabulary }: {
       </Card>
     
 
-      <VocabularyEditor lessonId={lessonId} initialVocabulary={initialVocabulary} /></div>
+      <VocabularyEditor lessonId={lessonId} initialVocabulary={initialVocabulary} />
+    </div>
   )
 }
 
