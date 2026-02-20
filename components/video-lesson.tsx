@@ -21,6 +21,7 @@ import { completeLesson, syncLessonProgress } from "@/lib/actions/student"
 import { cn } from "@/lib/utils"
 import {
     BookOpen,
+    Check,
     CheckCircle2,
     ChevronDown,
     ChevronRight,
@@ -527,6 +528,138 @@ function ChallengeLesson({
   )
 }
 
+// ─── Lesson Quiz Card (sidebar, for VIDEO/NOTES lessons) ─────────────────────
+
+function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
+  const questions: any[] = quiz.questions || []
+  const [open, setOpen] = useState(false)
+  const [currentQ, setCurrentQ] = useState(0)
+  const [answers, setAnswers] = useState<Record<number, string>>({})
+  const [submitted, setSubmitted] = useState(false)
+  const [score, setScore] = useState(0)
+
+  if (!questions.length) return null
+
+  const xp = quiz.points || 50
+
+  const handleSubmit = () => {
+    let correct = 0
+    questions.forEach((q: any, i: number) => {
+      if (answers[i] === q.answer || answers[i] === q.correctAnswer) correct++
+    })
+    const pct = Math.round((correct / questions.length) * 100)
+    setScore(pct)
+    setSubmitted(true)
+  }
+
+  const handleReset = () => {
+    setCurrentQ(0)
+    setAnswers({})
+    setSubmitted(false)
+    setScore(0)
+  }
+
+  const q = questions[currentQ]
+  const options: string[] = q?.options || (q?.type === "true_false" ? ["Verdadeiro", "Falso"] : [])
+
+  return (
+    <Card className={cn(
+      "border-2 transition-all overflow-hidden",
+      submitted && score >= 70 ? "border-success/30" : submitted ? "border-destructive/20" : "border-amber-500/20"
+    )}>
+      {/* Header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between p-4 hover:bg-muted/30 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
+            submitted && score >= 70 ? "bg-success/10 text-success" : "bg-amber-500/10 text-amber-500"
+          )}>
+            {submitted && score >= 70 ? <Trophy className="w-5 h-5" /> : <Zap className="w-5 h-5" />}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{quiz.title || "Exercícios da Aula"}</p>
+            <p className="text-xs text-muted-foreground">
+              {submitted ? `${score}% · ` : ""}{questions.length} questões · +{xp} XP
+            </p>
+          </div>
+        </div>
+        {submitted && score >= 70 ? (
+          <Badge variant="outline" className="bg-success/10 text-success border-success/30 text-[10px]">Concluído</Badge>
+        ) : (
+          <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform", open && "rotate-180")} />
+        )}
+      </button>
+
+      {/* Expanded content */}
+      {open && !submitted && (
+        <div className="border-t px-4 pb-4 pt-4 space-y-4">
+          {/* Progress */}
+          <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+            <span>Questão {currentQ + 1}/{questions.length}</span>
+            <Progress value={((currentQ) / questions.length) * 100} className="w-24 h-1.5" />
+          </div>
+
+          <p className="text-sm font-medium leading-snug">{q?.question}</p>
+
+          <div className="space-y-2">
+            {options.map((opt: string) => (
+              <button
+                key={opt}
+                onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
+                className={cn(
+                  "w-full text-left p-3 rounded-xl border-2 text-xs font-medium transition-all",
+                  answers[currentQ] === opt
+                    ? "border-amber-500 bg-amber-500/10 text-foreground"
+                    : "border-border hover:border-amber-500/40 hover:bg-muted/40 text-foreground/80"
+                )}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-between pt-1">
+            <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}>
+              ← Anterior
+            </Button>
+            {currentQ < questions.length - 1 ? (
+              <Button size="sm" className="h-8 text-xs" onClick={() => setCurrentQ(q => q + 1)} disabled={!answers[currentQ]}>
+                Próxima →
+              </Button>
+            ) : (
+              <Button size="sm" className="h-8 text-xs bg-amber-500 hover:bg-amber-600 text-white" onClick={handleSubmit} disabled={!answers[currentQ]}>
+                <Check className="w-3.5 h-3.5 mr-1" /> Submeter
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Result */}
+      {open && submitted && (
+        <div className="border-t px-4 pb-4 pt-4 text-center space-y-3">
+          <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mx-auto", score >= 70 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+            {score >= 70 ? <Trophy className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
+          </div>
+          <p className="text-2xl font-black font-mono">{score}%</p>
+          <Progress value={score} className="h-2 max-w-[120px] mx-auto" />
+          {score >= 70 ? (
+            <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">+{xp} XP desbloqueado!</Badge>
+          ) : (
+            <p className="text-xs text-muted-foreground">Precisa de 70% para passar</p>
+          )}
+          <Button size="sm" variant="outline" className="w-full text-xs h-8" onClick={handleReset}>
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+    </Card>
+  )
+}
+
 // ─── Main VideoLesson Component ───────────────────────────────────────────────
 
 export function VideoLesson({ currentLesson, isEditable = false, initialPosition = 0, isCompleted = false, nextLesson, onLessonUpdate }: VideoLessonProps) {
@@ -696,25 +829,19 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
       <div className="flex flex-col lg:flex-row gap-8 w-full">
         {/* Main */}
         <div className="flex-1 min-w-0 space-y-6">
-          {/* Player */}
+          {/* Player or type placeholder */}
           <Card className="overflow-hidden">
             {isEditable ? (
               <div className="p-1">
                 <VideoUpload initialUrl={currentLesson.videoUrl} onUploadComplete={(url, dur, meta) => handleSave({ videoUrl: url, duration: dur, metadata: meta })} />
               </div>
-            ) : (
+            ) : currentLesson.videoUrl ? (
               <div
                 ref={containerRef}
                 className={cn("relative bg-neutral-950 aspect-video flex items-center justify-center transition-all duration-500 overflow-hidden group", isTheaterMode && !isFullscreen ? "fixed inset-0 z-[100] bg-black/95" : "")}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => isPlaying && setShowControls(false)}
               >
-                {!currentLesson.videoUrl && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50 text-white/50 flex-col gap-2">
-                    <VolumeX className="w-12 h-12 opacity-20" />
-                    <p className="text-sm font-mono tracking-widest uppercase">Vídeo não disponível</p>
-                  </div>
-                )}
                 <video
                   key={currentLesson.id + (currentLesson.videoUrl || "")}
                   ref={videoRef}
@@ -788,6 +915,17 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            ) : (
+              /* No video uploaded yet — show clean placeholder */
+              <div className="aspect-video bg-gradient-to-br from-muted/40 to-muted/20 flex flex-col items-center justify-center gap-4 text-muted-foreground border-b">
+                <div className="p-4 rounded-2xl bg-muted/30">
+                  <Video className="w-12 h-12 opacity-30" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">Vídeo em preparação</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">O professor irá carregar o vídeo em breve</p>
                 </div>
               </div>
             )}
@@ -889,7 +1027,12 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
             </CardContent>
           </Card>
 
-          {/* Next lesson (dynamic from DB) */}
+          {/* Exercises / Quiz Card — shown for all lesson types when quizzes exist */}
+          {!isEditable && currentLesson.quizzes && currentLesson.quizzes.length > 0 && (
+            <LessonQuizCard quiz={currentLesson.quizzes[0]} lessonId={currentLesson.id} />
+          )}
+
+          {/* Next lesson */}
           {!isEditable && nextLesson && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base font-semibold font-display">A Seguir</CardTitle></CardHeader>
