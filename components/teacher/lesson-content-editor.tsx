@@ -52,6 +52,7 @@ interface LessonContentEditorProps {
   title: string
   module: string
   level: string
+  courseId: string
   initialMetadata?: any
 }
 
@@ -63,7 +64,7 @@ function calcReadingTime(markdown: string) {
   return { words, minutes }
 }
 
-function DeleteLessonButton({ lessonId }: { lessonId: string }) {
+function DeleteLessonButton({ lessonId, courseId }: { lessonId: string, courseId: string }) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -72,7 +73,7 @@ function DeleteLessonButton({ lessonId }: { lessonId: string }) {
     try {
       await deleteLesson(lessonId)
       toast.success("Aula excluída com sucesso")
-      router.push('../edit') // Go back to course editor
+      router.push(`/teacher/courses/${courseId}/edit`)
     } catch (error) {
       toast.error("Erro ao excluir aula")
       setIsDeleting(false)
@@ -664,6 +665,7 @@ export function LessonContentEditor({
   title,
   module,
   level,
+  courseId,
   initialMetadata,
 }: LessonContentEditorProps) {
   const router = useRouter()
@@ -672,11 +674,11 @@ export function LessonContentEditor({
     <div className="space-y-6">
       {/* Header with back button and Delete option */}
       <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8">
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/teacher/courses/${courseId}/edit`)} className="h-8">
           <ArrowLeft className="w-4 h-4 mr-1.5" />
           Voltar para o Curso
         </Button>
-        <DeleteLessonButton lessonId={lessonId} />
+        <DeleteLessonButton lessonId={lessonId} courseId={courseId} />
       </div>
 
       <div className="grid grid-cols-1 gap-6">

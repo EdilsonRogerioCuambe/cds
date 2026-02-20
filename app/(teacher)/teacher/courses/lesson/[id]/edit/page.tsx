@@ -139,6 +139,7 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
             title={lesson.title}
             module={lesson.module.title}
             level={lesson.module.course.level}
+            courseId={lesson.module.course.id}
             initialMetadata={(lesson.metadata as any) || undefined}
           />
         </TabsContent>
