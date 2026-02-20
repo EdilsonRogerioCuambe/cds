@@ -7,15 +7,15 @@ import { Progress } from "@/components/ui/progress"
 import { type Course, type Module } from "@/lib/data"
 import { cn, formatDuration } from "@/lib/utils"
 import {
-    BookOpen,
-    CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    Clock,
-    Loader2,
-    Lock,
-    Play,
-    Users,
+  BookOpen,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Loader2,
+  Lock,
+  Play,
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
@@ -81,7 +81,7 @@ function ModuleCard({
           </div>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-muted-foreground">
-              {mod.completedLessons}/{mod.lessons.length} lessons
+              {mod.completedLessons}/{mod.lessons.length} aulas
             </span>
             <span className="text-xs text-muted-foreground">
               {mod.estimatedMinutes} min
@@ -209,7 +209,7 @@ function CourseCard({ course }: { course: Course }) {
               <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <BookOpen className="w-3.5 h-3.5" />
-                  {course.totalLessons} lessons
+                  {course.totalLessons} aulas
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
@@ -217,7 +217,7 @@ function CourseCard({ course }: { course: Course }) {
                 </span>
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
-                  {course.enrolled.toLocaleString()} students
+                  {course.enrolled.toLocaleString()} alunos
                 </span>
               </div>
             </div>
@@ -227,7 +227,7 @@ function CourseCard({ course }: { course: Course }) {
             <div className="mt-4">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-medium text-foreground">
-                  Progress
+                  Progresso
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {progressPercent}%
@@ -276,7 +276,7 @@ function CourseCard({ course }: { course: Course }) {
           {course.locked && (
             <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
               <Lock className="w-4 h-4" />
-              Complete the previous level to unlock
+              Conclua o nível anterior para desbloquear
             </div>
           )}
         </div>
@@ -299,10 +299,10 @@ export function CourseStructure({ courses }: { courses: Course[] }) {
     <div className="space-y-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold font-display text-foreground text-balance">
-          Course Catalog
+          Catálogo de Cursos
         </h1>
         <p className="text-muted-foreground mt-1">
-          Progress through six levels from Beginner to Mastery
+          Avance por seis níveis, do Iniciante ao Avançado
         </p>
       </div>
 
