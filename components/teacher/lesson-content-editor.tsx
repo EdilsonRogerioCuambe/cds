@@ -1,14 +1,26 @@
 "use client"
 
 import { VideoUpload } from "@/components/teacher/video-upload"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { updateLesson } from "@/lib/actions/teacher"
+import { deleteLesson, updateLesson } from "@/lib/actions/teacher"
 import {
+    ArrowLeft,
     BookOpen,
     CalendarDays,
     Clock,
@@ -21,6 +33,7 @@ import {
     Trash2,
     Zap,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
@@ -48,6 +61,56 @@ function calcReadingTime(markdown: string) {
   const words = plainText.split(/\s+/).filter(Boolean).length
   const minutes = Math.ceil(words / 200) // avg 200 wpm
   return { words, minutes }
+}
+
+function DeleteLessonButton({ lessonId }: { lessonId: string }) {
+  const router = useRouter()
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      await deleteLesson(lessonId)
+      toast.success("Aula excluída com sucesso")
+      router.push('../edit') // Go back to course editor
+    } catch (error) {
+      toast.error("Erro ao excluir aula")
+      setIsDeleting(false)
+    }
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 border-destructive/20 h-8">
+          <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+          Excluir Aula
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Esta ação não pode ser desfeita. Isso excluirá permanentemente esta aula e todo o seu conteúdo.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault()
+              handleDelete()
+            }}
+            disabled={isDeleting}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Excluir Permanentemente
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
 }
 
 // ── Shared Vocabulary / Grammar Editor ───────────────────────────────────────
@@ -603,32 +666,51 @@ export function LessonContentEditor({
   level,
   initialMetadata,
 }: LessonContentEditorProps) {
-  switch (lessonType) {
-    case "NOTES":
-      return <NotesEditor lessonId={lessonId} initialContent={initialContent} initialVocabulary={initialVocabulary} />
+  const router = useRouter()
 
-    case "LIVE":
-      return (
-        <LiveEditor
-          lessonId={lessonId}
-          initialScheduledAt={initialScheduledAt}
-          initialMeetingUrl={initialMeetingUrl}
-          initialMeetingPlatform={initialMeetingPlatform}
-        />
-      )
+  return (
+    <div className="space-y-6">
+      {/* Header with back button and Delete option */}
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="h-8">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Voltar para o Curso
+        </Button>
+        <DeleteLessonButton lessonId={lessonId} />
+      </div>
 
-    case "CHALLENGE":
-      return <ChallengeEditor lessonId={lessonId} initialChallengeConfig={initialChallengeConfig} />
+      <div className="grid grid-cols-1 gap-6">
+        {(() => {
+          switch (lessonType) {
+            case "NOTES":
+              return <NotesEditor lessonId={lessonId} initialContent={initialContent} initialVocabulary={initialVocabulary} />
 
-    default: // VIDEO
-      return (
-        <VideoEditor
-          lessonId={lessonId}
-          initialVideoUrl={initialVideoUrl}
-          initialContent={initialContent}
-          initialVocabulary={initialVocabulary}
-          initialMetadata={initialMetadata}
-        />
-      )
-  }
+            case "LIVE":
+              return (
+                <LiveEditor
+                  lessonId={lessonId}
+                  initialScheduledAt={initialScheduledAt}
+                  initialMeetingUrl={initialMeetingUrl}
+                  initialMeetingPlatform={initialMeetingPlatform}
+                />
+              )
+
+            case "CHALLENGE":
+              return <ChallengeEditor lessonId={lessonId} initialChallengeConfig={initialChallengeConfig} />
+
+            default: // VIDEO
+              return (
+                <VideoEditor
+                  lessonId={lessonId}
+                  initialVideoUrl={initialVideoUrl}
+                  initialContent={initialContent}
+                  initialVocabulary={initialVocabulary}
+                  initialMetadata={initialMetadata}
+                />
+              )
+          }
+        })()}
+      </div>
+    </div>
+  )
 }

@@ -743,12 +743,15 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                     <Accordion type="multiple" className="w-full space-y-4">
                       {course.modules.map((module: any) => (
                         <SortableItem key={module.id} id={module.id}>
-                          <AccordionItem value={module.id} className="border rounded-lg px-4 bg-card">
-                            <div className="flex items-center gap-2">
-                              <AccordionTrigger className="hover:no-underline py-4 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <GripVertical className="w-4 h-4 text-muted-foreground mr-2 cursor-grab active:cursor-grabbing" />
-                                  <span className="font-bold">{module.title}</span>
+                          {({ attributes, listeners }: any) => (
+                            <AccordionItem value={module.id} className="border rounded-lg px-4 bg-card">
+                              <div className="flex items-center gap-2">
+                                <AccordionTrigger className="hover:no-underline py-4 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div {...attributes} {...listeners}>
+                                      <GripVertical className="w-4 h-4 text-muted-foreground mr-2 cursor-grab active:cursor-grabbing" />
+                                    </div>
+                                    <span className="font-bold">{module.title}</span>
                                   <Badge variant={module.published ? "default" : "secondary"} className="ml-2 h-4 text-[9px] px-1 uppercase">
                                     {module.published ? "Publicado" : "Draft"}
                                   </Badge>
@@ -764,7 +767,6 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                   <Link
                                     href={`/teacher/modules/${module.id}/edit`}
                                     onClick={(e) => e.stopPropagation()}
-                                    onPointerDown={(e) => e.stopPropagation()}
                                   >
                                     <Edit className="w-3.5 h-3.5" />
                                   </Link>
@@ -773,7 +775,6 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-8 w-8 text-destructive ml-1"
-                                  onPointerDown={(e) => e.stopPropagation()}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     confirmDelete(module.id, "module")
@@ -793,10 +794,13 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                   <div className="space-y-2">
                                     {module.lessons?.map((lesson: any) => (
                                       <SortableItem key={lesson.id} id={lesson.id}>
-                                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
-                                          <div className="flex items-center gap-3">
-                                            <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
-                                            {/* Lesson type icon */}
+                                        {({ attributes, listeners }: any) => (
+                                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
+                                            <div className="flex items-center gap-3">
+                                              <div {...attributes} {...listeners}>
+                                                <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                                              </div>
+                                              {/* Lesson type icon */}
                                             {lesson.lessonType === "NOTES" ? (
                                               <FileText className="w-4 h-4 text-blue-400" />
                                             ) : lesson.lessonType === "LIVE" ? (
@@ -829,7 +833,6 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                               <Link
                                                 href={`/teacher/courses/lesson/${lesson.id}/edit`}
                                                 onClick={(e) => e.stopPropagation()}
-                                                onPointerDown={(e) => e.stopPropagation()}
                                               >
                                                 <Edit className="w-3.5 h-3.5" />
                                               </Link>
@@ -838,7 +841,6 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                                variant="ghost"
                                                size="icon"
                                                className="h-8 w-8 text-destructive"
-                                               onPointerDown={(e) => e.stopPropagation()}
                                                onClick={(e) => {
                                                  e.stopPropagation()
                                                  e.preventDefault()
@@ -849,6 +851,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                                              </Button>
                                           </div>
                                         </div>
+                                        )}
                                       </SortableItem>
                                     ))}
                                   </div>
@@ -869,6 +872,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                               </div>
                             </AccordionContent>
                           </AccordionItem>
+                        )}
                         </SortableItem>
                       ))}
                     </Accordion>
