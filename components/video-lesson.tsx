@@ -1,6 +1,5 @@
 "use client"
 
-import SplashScreen from "@/components/splash-screen"
 import { VideoMetadata } from "@/components/teacher/video-editor"
 import { VideoUpload } from "@/components/teacher/video-upload"
 import { Badge } from "@/components/ui/badge"
@@ -589,27 +588,10 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
     }
   }
 
-  // Delegate to specialized components
-  if (!isEditable) {
-    if (currentLesson.lessonType === "NOTES") {
-      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
-      return <NotesLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} markdownComponents={markdownComponents} />
-    }
-    if (currentLesson.lessonType === "LIVE") {
-      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
-      return <LiveLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
-    }
-    if (currentLesson.lessonType === "CHALLENGE") {
-      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
-      return <ChallengeLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
-    }
-  }
-
-  if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={1500} />
-
-  // ── Sync heartbeat
+  // ── Sync heartbeat (VIDEO only — no-ops for other types)
+  // IMPORTANT: all useEffect must be declared BEFORE any early returns (Rules of Hooks)
   useEffect(() => {
-    if (isEditable || !isPlaying) return
+    if (isEditable || !isPlaying || currentLesson.lessonType !== "VIDEO") return
     const interval = setInterval(async () => {
       if (!videoRef.current) return
       const currentPos = Math.floor(videoRef.current.currentTime)
@@ -623,7 +605,7 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
       }
     }, 10000)
     return () => clearInterval(interval)
-  }, [isPlaying, isEditable, currentLesson.id])
+  }, [isPlaying, isEditable, currentLesson.id, currentLesson.lessonType])
 
   // ── Fullscreen
   useEffect(() => {
@@ -632,14 +614,29 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
     return () => document.removeEventListener("fullscreenchange", handler)
   }, [])
 
-  // ── Init position
+  // ── Init position (VIDEO only)
   useEffect(() => {
-    if (videoRef.current && !isInitialized && currentLesson.videoUrl) {
+    if (videoRef.current && !isInitialized && currentLesson.videoUrl && currentLesson.lessonType === "VIDEO") {
       const trimStart = currentLesson.metadata?.trimStart || 0
       videoRef.current.currentTime = initialPosition > trimStart ? initialPosition : trimStart
       setIsInitialized(true)
     }
   }, [initialPosition, currentLesson.metadata?.trimStart, currentLesson.videoUrl, isInitialized])
+
+  // ── Early returns for non-VIDEO types (MUST be after ALL hooks)
+  if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={currentLesson.lessonType === "VIDEO" ? 1500 : 800} />
+
+  if (!isEditable) {
+    if (currentLesson.lessonType === "NOTES") {
+      return <NotesLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} markdownComponents={markdownComponents} />
+    }
+    if (currentLesson.lessonType === "LIVE") {
+      return <LiveLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
+    }
+    if (currentLesson.lessonType === "CHALLENGE") {
+      return <ChallengeLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
+    }
+  }
 
   const handleMouseMove = () => {
     setShowControls(true)
