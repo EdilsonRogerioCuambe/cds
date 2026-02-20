@@ -626,6 +626,7 @@ export function LessonContentEditor({
           lessonId={lessonId}
           initialVideoUrl={initialVideoUrl}
           initialContent={initialContent}
+          initialVocabulary={initialVocabulary}
           initialMetadata={initialMetadata}
         />
       )
