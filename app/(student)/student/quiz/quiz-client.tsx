@@ -22,7 +22,11 @@ export function QuizClient({ initialQuizzes, userLevel }: { initialQuizzes: any[
         </div>
         <QuizPage
           quiz={selectedQuiz}
-          questions={Array.isArray(selectedQuiz.questions) ? selectedQuiz.questions : []}
+          questions={
+            Array.isArray(selectedQuiz.questions)
+              ? selectedQuiz.questions
+              : (typeof selectedQuiz.questions === "string" ? JSON.parse(selectedQuiz.questions) : [])
+          }
         />
       </div>
     )

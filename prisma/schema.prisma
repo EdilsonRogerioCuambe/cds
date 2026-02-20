@@ -149,8 +149,9 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules     Module[]
-  enrollments Enrollment[]
+  modules      Module[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
 }
 
 model Module {
@@ -164,7 +165,8 @@ model Module {
 
   published Boolean @default(false)
 
-  lessons Lesson[]
+  lessons      Lesson[]
+  certificates Certificate[]
 }
 
 enum LessonType {
@@ -238,18 +240,35 @@ model Progress {
 }
 
 model Quiz {
-  id          String  @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String?
-  type        String  @default("standard") // standard, listening, challenge, etc.
-  level       String? // A1, A2, etc. for standalone quizzes
-  points      Int     @default(100)
-  questions   Json // Store questions as JSON array for flexibility
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  type         String  @default("standard") // standard, listening, challenge, etc.
+  level        String? // A1, A2, etc. for standalone quizzes
+  points       Int     @default(100)
+  timeLimit    Int     @default(600) // in seconds
+  passingScore Int     @default(70) // percentage
+  questions    Json // Store questions as JSON array for flexibility
 
   lessonId String? @db.ObjectId
   lesson   Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   attempts QuizAttempt[]
+}
+
+model Certificate {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @db.ObjectId
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId         String?  @db.ObjectId // Optional for course-level certificates
+  module           Module?  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  courseId         String   @db.ObjectId
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  issuedAt         DateTime @default(now())
+  verificationCode String   @unique // Unique code for authenticity check
+  type             String   @default("MODULE") // "MODULE" or "COURSE"
+
+  @@unique([userId, moduleId])
 }
 
 model QuizAttempt {
@@ -280,16 +299,6 @@ model Payment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model Certificate {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  verificationCode String   @unique
-  pdfUrl           String
-  issueDate        DateTime @default(now())
-
-  userId String @db.ObjectId
-  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Achievement {

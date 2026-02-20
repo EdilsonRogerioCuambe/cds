@@ -154,6 +154,8 @@ export async function saveQuiz(lessonId: string, data: {
   description?: string
   type?: string
   points?: number
+  timeLimit?: number
+  passingScore?: number
   questions: any // JSON array
 }) {
   const existingQuiz = await prisma.quiz.findFirst({ where: { lessonId } })

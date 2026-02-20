@@ -12,13 +12,17 @@ import {
     ChevronDown,
     ChevronRight,
     Clock,
+    FileText,
     Loader2,
     Lock,
     Play,
+    Trophy,
     Users,
+    Video,
 } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
+import { CertificateDownloadButton } from "./certificate-download-button"
 
 const levelColors: Record<string, string> = {
   A1: "bg-[#15b376]", // Brand Green
@@ -40,9 +44,11 @@ const categoryIcons: Record<string, string> = {
 function ModuleCard({
   module: mod,
   courseId,
+  courseTitle,
 }: {
   module: Module
   courseId: string
+  courseTitle: string
 }) {
   const [expanded, setExpanded] = useState(false)
   const completionPercent = Math.round(
@@ -52,9 +58,16 @@ function ModuleCard({
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            setExpanded(!expanded)
+          }
+        }}
+        className="w-full flex items-center gap-4 p-4 text-left hover:bg-muted/50 transition-colors cursor-pointer"
       >
         <div
           className={cn(
@@ -87,57 +100,104 @@ function ModuleCard({
               {mod.estimatedMinutes} min
             </span>
           </div>
-          <Progress value={completionPercent} className="h-1.5 mt-2" />
+          <div className="flex items-center justify-between mt-2 gap-4">
+            <Progress value={completionPercent} className="h-1.5 flex-1" />
+            <CertificateDownloadButton
+              type="MODULE"
+              id={mod.id}
+              title={mod.title}
+              courseTitle={courseTitle}
+            />
+          </div>
         </div>
         {expanded ? (
           <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
         ) : (
           <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="border-t border-border bg-muted/20">
-          {mod.lessons.map((lesson, i) => (
-            <Link
-              key={lesson.id}
-              href={`/student/lesson/${lesson.id}`}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0 border-border/50"
-            >
-              <div
-                className={cn(
-                  "flex items-center justify-center w-7 h-7 rounded-full text-xs font-medium shrink-0",
-                  lesson.completed
-                    ? "bg-success text-success-foreground"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                {lesson.completed ? (
-                  <CheckCircle2 className="w-4 h-4" />
-                ) : (
-                  i + 1
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p
+          {(() => {
+            let foundNext = false
+            return mod.lessons.map((lesson, i) => {
+              const isNext = !lesson.completed && !foundNext
+              if (isNext) foundNext = true
+
+              const LessonIcon = lesson.lessonType === "VIDEO" ? Video :
+                                lesson.lessonType === "NOTES" ? FileText :
+                                lesson.lessonType === "CHALLENGE" ? Trophy :
+                                Users // LIVE
+
+              return (
+                <Link
+                  key={lesson.id}
+                  href={lesson.isAttachedQuiz ? `/student/quiz/${lesson.id}` : `/student/lesson/${lesson.id}`}
                   className={cn(
-                    "text-sm truncate",
-                    lesson.completed
-                      ? "text-muted-foreground"
-                      : "text-foreground font-medium"
+                    "flex items-center gap-3 px-4 py-4 hover:bg-muted/50 transition-all border-b last:border-b-0 border-border/50 relative group",
+                    isNext && "bg-primary/[0.03] border-l-4 border-l-primary py-5 shadow-sm"
                   )}
                 >
-                  {lesson.title}
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {lesson.duration}
-              </span>
-              {!lesson.completed && (
-                <Play className="w-3.5 h-3.5 text-primary shrink-0" />
-              )}
-            </Link>
-          ))}
+                  <div
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 rounded-xl text-xs font-medium shrink-0 transition-colors",
+                      lesson.completed
+                        ? "bg-success/20 text-success"
+                        : isNext
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                          : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                    )}
+                  >
+                    {lesson.completed ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <LessonIcon className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                       <p
+                        className={cn(
+                          "text-sm truncate",
+                          lesson.completed
+                            ? "text-muted-foreground line-through opacity-70"
+                            : "text-foreground font-bold"
+                        )}
+                      >
+                        {lesson.title}
+                      </p>
+                      {isNext && (
+                        <Badge className="bg-primary text-[10px] font-black tracking-tighter h-4 px-1 leading-none uppercase animate-pulse">
+                          Próxima
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                       <span className="text-[10px] uppercase font-bold text-muted-foreground/60 tracking-wider">
+                          {lesson.lessonType === "VIDEO" ? "Vídeo Aula" :
+                           lesson.lessonType === "NOTES" ? "Nota de Estudo" :
+                           lesson.lessonType === "CHALLENGE" ? "Desafio/Quiz" : "Aula ao Vivo"}
+                       </span>
+                       <span className="text-[10px] text-muted-foreground/40">•</span>
+                       <span className="text-[10px] text-muted-foreground font-medium">
+                        {lesson.duration}
+                      </span>
+                    </div>
+                  </div>
+
+                  {!lesson.completed && (
+                    <div className={cn(
+                       "flex items-center justify-center w-8 h-8 rounded-full transition-all shrink-0",
+                       isNext ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground"
+                    )}>
+                       <Play className={cn("w-3.5 h-3.5 fill-current", isNext ? "animate-pulse" : "")} />
+                    </div>
+                  )}
+                </Link>
+              )
+            })
+          })()}
         </div>
       )}
     </div>
@@ -284,8 +344,17 @@ function CourseCard({ course }: { course: Course }) {
         {expanded && course.modules.length > 0 && (
           <div className="px-5 pb-5 space-y-3">
             {course.modules.map((mod) => (
-              <ModuleCard key={mod.id} module={mod} courseId={course.id} />
+              <ModuleCard key={mod.id} module={mod} courseId={course.id} courseTitle={course.title} />
             ))}
+
+            {/* Final Course Certificate Button */}
+            <div className="mt-4 pt-4 border-t border-border">
+               <CertificateDownloadButton
+                  type="COURSE"
+                  id={course.id}
+                  title={course.title}
+               />
+            </div>
           </div>
         )}
       </CardContent>

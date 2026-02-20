@@ -33,11 +33,15 @@ export interface Lesson {
   id: string
   title: string
   duration: string
+  seconds?: number
   videoUrl: string
+  lessonType: "VIDEO" | "NOTES" | "CHALLENGE" | "LIVE"
   completed: boolean
   notes: string
   vocabulary: VocabWord[]
   published?: boolean
+  isAttachedQuiz?: boolean
+  parentLessonId?: string
 }
 
 export interface VocabWord {
@@ -102,7 +106,8 @@ export async function getCourses(teacherId?: string): Promise<Course[]> {
         include: {
           lessons: {
             where: teacherId ? {} : { published: true },
-            orderBy: { order: 'asc' }
+            orderBy: { order: 'asc' },
+            include: { quizzes: true }
           }
         }
       },
@@ -128,17 +133,44 @@ export async function getCourses(teacherId?: string): Promise<Course[]> {
       title: mod.title,
       category: "Grammar", // Default or map from DB if added
       published: mod.published,
-        lessons: mod.lessons.map(l => ({
-          id: l.id,
-          title: l.title,
-          duration: l.duration ? `${Math.floor(l.duration / 60)}:${(l.duration % 60).toString().padStart(2, '0')}` : "0:00",
-          seconds: l.duration || 0,
-          videoUrl: l.videoUrl || "",
-        completed: false, // Calculate based on user progress
-        notes: "",
-        vocabulary: [],
-        published: l.published
-      })),
+        lessons: mod.lessons.flatMap(l => {
+          const mainLesson = {
+            id: l.id,
+            title: l.title,
+            duration: l.duration ? `${Math.floor(l.duration / 60)}:${(l.duration % 60).toString().padStart(2, '0')}` : "0:00",
+            seconds: l.duration || 0,
+            videoUrl: l.videoUrl || "",
+            lessonType: l.lessonType as any,
+            completed: false, // Calculate based on user progress
+            notes: "",
+            vocabulary: [],
+            published: l.published
+          }
+
+          // If it's a VIDEO/NOTES lesson with a quiz, add the quiz as a separate step
+          if ((l.lessonType === "VIDEO" || l.lessonType === "NOTES") && l.quizzes && l.quizzes.length > 0) {
+             const q = l.quizzes[0]
+             return [
+               mainLesson,
+               {
+                 id: q.id,
+                 title: `Desafio: ${q.title}`,
+                 duration: "5:00",
+                 seconds: 300,
+                 videoUrl: "",
+                 lessonType: "CHALLENGE" as const,
+                 completed: false,
+                 notes: q.description || "",
+                 vocabulary: [],
+                 published: l.published,
+                 isAttachedQuiz: true, // Special flag for UI handling if needed
+                 parentLessonId: l.id
+               }
+             ]
+          }
+
+          return [mainLesson]
+        }),
       completedLessons: 0,
       estimatedMinutes: mod.lessons.reduce((acc, l) => acc + (l.duration || 0), 0) / 60
     })),

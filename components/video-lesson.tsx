@@ -1,5 +1,6 @@
 "use client"
 
+import { QuizPage } from "@/components/quiz-page"
 import SplashScreen from "@/components/splash-screen"
 import { VideoMetadata } from "@/components/teacher/video-editor"
 import { VideoUpload } from "@/components/teacher/video-upload"
@@ -37,8 +38,6 @@ import {
     Plus,
     Settings,
     SkipForward,
-    Star,
-    Timer,
     Trash2,
     Trophy,
     Video,
@@ -51,14 +50,12 @@ import { useEffect, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface NextLesson {
   id: string
   title: string
-  duration: number | null
-  lessonType: string
+  duration?: string | number
+  lessonType: "VIDEO" | "NOTES" | "CHALLENGE" | "LIVE"
+  isAttachedQuiz?: boolean
 }
 
 interface VideoLessonProps {
@@ -345,53 +342,9 @@ function ChallengeLesson({
   nextLesson?: NextLesson | null
 }) {
   const quiz = currentLesson.quizzes?.[0]
-  const config = currentLesson.challengeConfig
-  const totalTime = config?.timeLimit || 300
-  const [started, setStarted] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(totalTime)
-  const [currentQ, setCurrentQ] = useState(0)
-  const [answers, setAnswers] = useState<Record<number, string>>({})
-  const [submitted, setSubmitted] = useState(false)
-  const [score, setScore] = useState(0)
-
-  const questions: any[] = quiz?.questions ? (typeof quiz.questions === "string" ? JSON.parse(quiz.questions) : quiz.questions) : []
-  const passingScore = config?.passingScore || 70
-  const xpReward = config?.xpReward || quiz?.points || 100
-  const passed = score >= passingScore
-
-  useEffect(() => {
-    if (!started || submitted) return
-    const interval = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) { clearInterval(interval); handleSubmit(); return 0 }
-        return t - 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [started, submitted])
-
-  const [hasSaved, setHasSaved] = useState(false)
-
-  const handleSubmit = async () => {
-    if (!quiz) return
-    let correct = 0
-    questions.forEach((q, i) => {
-      const userAns = answers[i] || ""
-      const isCorrect = userAns.toLowerCase().trim() === (q.correctAnswer || "").toLowerCase().trim()
-      if (isCorrect) correct++
-    })
-    const pct = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
-    setScore(pct)
-    setSubmitted(true)
-
-    if (!hasSaved) {
-      await saveQuizAttempt(quiz.id, correct, questions.length, totalTime - timeLeft)
-      setHasSaved(true)
-    }
-  }
-
-  const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
-  const timerColor = timeLeft < 30 ? "text-red-400" : timeLeft < 60 ? "text-yellow-400" : "text-primary"
+  const questions: any[] = quiz?.questions
+    ? (typeof quiz.questions === "string" ? JSON.parse(quiz.questions) : quiz.questions)
+    : []
 
   if (!quiz || questions.length === 0) {
     return (
@@ -410,208 +363,13 @@ function ChallengeLesson({
     )
   }
 
-  if (!started && !submitted) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
-        <div>
-          <Badge variant="secondary" className="gap-1 text-xs mb-2 bg-amber-500/10 text-amber-400 border-amber-500/30"><Zap className="w-3 h-3" /> Desafio</Badge>
-          <h1 className="text-2xl sm:text-3xl font-bold font-display">{currentLesson.title}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{currentLesson.module} · Nível {currentLesson.level}</p>
-        </div>
-        <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-orange-500/5 to-amber-500/10 shadow-lg shadow-amber-500/5">
-          <CardContent className="p-8 text-center space-y-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-amber-500/20 blur-xl rounded-full" />
-              <div className="relative flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-500/10 to-orange-500/20 text-amber-500 mx-auto border border-amber-500/20 shadow-inner">
-                <Trophy className="w-12 h-12" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-foreground">{quiz.title}</h2>
-              {quiz.description && <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">{quiz.description}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center max-w-xl mx-auto">
-              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
-                <p className="text-2xl font-bold font-display text-foreground">{questions.length}</p>
-                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">Questões</p>
-              </div>
-              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
-                <p className="text-2xl font-bold font-display text-foreground font-mono">{formatTime(totalTime)}</p>
-                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">Tempo</p>
-              </div>
-              <div className="p-4 bg-background/60 backdrop-blur-sm rounded-2xl border border-white/5 shadow-sm">
-                <p className="text-2xl font-bold font-display text-amber-500">+{xpReward}</p>
-                <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mt-1">XP Recompensa</p>
-              </div>
-            </div>
-
-            <div className="pt-4 space-y-4">
-              <p className="text-sm font-medium text-muted-foreground">
-                Pontuação para aprovação: <span className="text-foreground font-bold">{passingScore}%</span>
-              </p>
-              <Button
-                size="lg"
-                className="gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold h-12 px-8 rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-105 active:scale-95"
-                onClick={() => setStarted(true)}
-              >
-                <Zap className="w-5 h-5 fill-current" />
-                Iniciar Desafio
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (submitted) {
-    return (
-      <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
-        <Card className={cn("overflow-hidden border-2", passed ? "border-success/30 bg-gradient-to-br from-success/5 to-success/10" : "border-destructive/30 bg-gradient-to-br from-destructive/5 to-destructive/10")}>
-          <CardContent className="p-8 text-center space-y-4">
-            <div className={cn(
-              "flex items-center justify-center w-24 h-24 rounded-full mx-auto mb-4 border-4 shadow-xl",
-              passed
-                ? "bg-gradient-to-br from-success/20 to-success/5 border-success/20 text-success shadow-success/10"
-                : "bg-gradient-to-br from-destructive/20 to-destructive/5 border-destructive/20 text-destructive shadow-destructive/10"
-            )}>
-              {passed ? <Trophy className="w-12 h-12" /> : <Zap className="w-12 h-12" />}
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-3xl font-bold font-display">{passed ? "Desafio Concluído! 🎉" : "Quase lá..."}</h2>
-              <p className="text-muted-foreground">{passed ? "Você dominou este tópico!" : "Não desista, tente novamente para melhorar."}</p>
-            </div>
-
-            <div className="py-6 space-y-4">
-              <div className="flex items-end justify-center gap-2">
-                <span className="text-6xl font-black font-mono tracking-tighter">{score}%</span>
-                <span className="text-lg text-muted-foreground font-medium mb-3">acerto</span>
-              </div>
-              <Progress
-                value={score}
-                className={cn("h-4 max-w-sm mx-auto rounded-full", passed ? "bg-success/10" : "bg-destructive/10")}
-                // indicatorClassName={passed ? "bg-success" : "bg-destructive"} // Assuming Progress component supports this or customize it
-              />
-              <p className="text-sm font-medium text-muted-foreground border border-border bg-muted/30 px-4 py-2 rounded-full w-fit mx-auto">
-                Você acertou <span className={passed ? "text-success" : "text-destructive"}>{Math.round(score / 100 * questions.length)}</span> de {questions.length} questões
-              </p>
-            </div>
-
-            {passed && (
-              <div className="flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-2xl max-w-sm mx-auto">
-                <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
-                  <Star className="w-6 h-6 fill-current" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-amber-500 uppercase tracking-wider">Recompensa</p>
-                  <p className="text-lg font-bold text-foreground">+{xpReward} XP Desbloqueados</p>
-                </div>
-              </div>
-            )}
-            <div className="flex gap-3 justify-center pt-2">
-              {!passed && (
-                <Button variant="outline" onClick={() => { setStarted(false); setSubmitted(false); setAnswers({}); setTimeLeft(totalTime); setCurrentQ(0); setHasSaved(false); }}>
-                  Tentar Novamente
-                </Button>
-              )}
-              {passed && !completed && (
-                <Button onClick={onComplete} className="gap-2">
-                  <CheckCircle2 className="w-4 h-4" /> Concluir Aula
-                </Button>
-              )}
-              {nextLesson && (
-                <Button asChild variant={passed ? "default" : "outline"}>
-                  <Link href={`/student/lesson/${nextLesson.id}`}><SkipForward className="w-4 h-4 mr-1.5" /> Próxima Aula</Link>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  const q = questions[currentQ]
-  const options: string[] = q.options || []
-
+  // Use the premium QuizPage for CHALLENGE type lessons
   return (
-    <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-4">
-      {/* Timer & Progress */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Questão {currentQ + 1}/{questions.length}</span>
-        </div>
-        <div className={cn("flex items-center gap-1.5 font-mono font-bold text-lg tabular-nums", timerColor)}>
-          <Timer className="w-4 h-4" /> {formatTime(timeLeft)}
-        </div>
-      </div>
-      <Progress value={((currentQ + 1) / questions.length) * 100} className="h-1.5" />
-
-      <Card className="border-amber-500/20">
-        <CardContent className="p-6 sm:p-8 space-y-6">
-          <p className="text-base sm:text-lg font-semibold text-foreground leading-relaxed">{q.question}</p>
-          <div className="space-y-3">
-            {options.length > 0 ? (
-              options.map((opt: string, i: number) => (
-                <button
-                  key={opt}
-                  onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
-                  className={cn(
-                    "w-full text-left p-5 rounded-xl border-2 transition-all relative group overflow-hidden",
-                    answers[currentQ] === opt
-                      ? "border-amber-500 bg-amber-500/10 text-foreground shadow-[0_0_0_1px_rgba(245,158,11,0.5)]"
-                      : "border-border hover:border-amber-500/50 hover:bg-muted/30 text-foreground/80 hover:shadow-md"
-                  )}
-                >
-                  <div className="flex items-center gap-4 relative z-10">
-                    <div className={cn(
-                      "flex items-center justify-center w-8 h-8 rounded-lg text-sm font-bold border transition-colors",
-                      answers[currentQ] === opt
-                        ? "bg-amber-500 border-amber-500 text-white"
-                        : "bg-muted border-border text-muted-foreground group-hover:border-amber-500/50 group-hover:text-amber-500"
-                    )}>
-                      {String.fromCharCode(65 + i)}
-                    </div>
-                    <span className="font-medium text-base">{opt}</span>
-                  </div>
-                  {answers[currentQ] === opt && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="space-y-4">
-                <Input
-                  placeholder="Escreva sua resposta aqui..."
-                  value={answers[currentQ] || ""}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnswers(a => ({ ...a, [currentQ]: e.target.value }))}
-                  className="h-14 text-lg border-2 focus-visible:ring-amber-500 border-amber-500/20 focus:border-amber-500"
-                />
-                <p className="text-xs text-muted-foreground italic">
-                  Dica: Verifique a ortografia antes de submeter.
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="flex justify-between pt-2">
-            <Button variant="ghost" size="sm" onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}>
-              Anterior
-            </Button>
-            {currentQ < questions.length - 1 ? (
-              <Button size="sm" onClick={() => setCurrentQ(q => q + 1)} disabled={!answers[currentQ]}>
-                Próxima
-              </Button>
-            ) : (
-              <Button size="sm" onClick={handleSubmit} disabled={!answers[currentQ]} className="bg-amber-500 hover:bg-amber-600 text-white">
-                Submeter
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+    <div className="fixed inset-0 z-[100] bg-background">
+      <QuizPage
+        quiz={quiz}
+        questions={questions}
+      />
     </div>
   )
 }
@@ -1146,22 +904,22 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
           </Card>
 
           {/* Exercises / Quiz Card — shown for all lesson types when quizzes exist */}
-          {!isEditable && currentLesson.quizzes && currentLesson.quizzes.length > 0 && (
-            <LessonQuizCard quiz={currentLesson.quizzes[0]} lessonId={currentLesson.id} />
-          )}
 
           {/* Next lesson */}
           {!isEditable && nextLesson && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-base font-semibold font-display">A Seguir</CardTitle></CardHeader>
               <CardContent>
-                <Link href={`/student/lesson/${nextLesson.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                <Link
+                  href={nextLesson.isAttachedQuiz ? `/student/quiz/${nextLesson.id}` : `/student/lesson/${nextLesson.id}`}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
                     {lessonTypeIcon(nextLesson.lessonType)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{nextLesson.title}</p>
-                    <p className="text-xs text-muted-foreground">{lessonTypeLabel(nextLesson.lessonType)} {nextLesson.duration ? `· ${Math.floor(nextLesson.duration / 60)}m` : ""}</p>
+                    <p className="text-xs text-muted-foreground">{lessonTypeLabel(nextLesson.lessonType)} {nextLesson.duration ? `· ${nextLesson.duration}` : ""}</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </Link>

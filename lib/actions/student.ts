@@ -1,6 +1,7 @@
 "use server"
 
 import { ActivityType } from "@prisma/client"
+import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
 import { checkAndAwardAchievements } from "../achievements"
 import { getCurrentUser } from "../auth"
@@ -117,7 +118,7 @@ export async function saveQuizAttempt(quizId: string, score: number, totalQuesti
   // Find lessonId if not provided (quizzes always belong to a lesson in this schema)
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
-    select: { lessonId: true }
+    select: { lessonId: true, passingScore: true }
   })
 
   const attempt = await prisma.quizAttempt.create({
@@ -125,7 +126,7 @@ export async function saveQuizAttempt(quizId: string, score: number, totalQuesti
       userId: user.id,
       quizId,
       score: totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0, // stored as percentage
-      passed: totalQuestions > 0 ? (score / totalQuestions) >= 0.7 : false, // 70% passing grade
+      passed: totalQuestions > 0 ? (score / totalQuestions) >= (quiz?.passingScore || 70) / 100 : false,
       answers: {
         rawScore: score,
         totalQuestions,
@@ -161,9 +162,24 @@ export async function saveQuizAttempt(quizId: string, score: number, totalQuesti
 export async function getNextLesson(currentLessonId: string) {
   const current = await prisma.lesson.findUnique({
     where: { id: currentLessonId },
-    include: { module: { include: { course: true } } },
+    include: {
+      module: { include: { course: true } },
+      quizzes: { take: 1 }
+    },
   })
   if (!current) return null
+
+  // If there's an attached quiz, it's the next step
+  if (current.quizzes.length > 0) {
+    const q = current.quizzes[0]
+    return {
+      id: q.id,
+      title: `Desafio: ${q.title}`,
+      duration: "5:00",
+      lessonType: "CHALLENGE" as const,
+      isAttachedQuiz: true
+    }
+  }
 
   const courseId = current.module.courseId
 
@@ -201,4 +217,148 @@ export async function getNextLesson(currentLessonId: string) {
   }
 
   return null
+}
+
+export async function getModuleCompletionStatus(moduleId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { isComplete: false, total: 0, completed: 0 }
+
+  const module = await prisma.module.findUnique({
+    where: { id: moduleId },
+    include: { lessons: { where: { published: true } } }
+  })
+
+  if (!module) return { isComplete: false, total: 0, completed: 0 }
+
+  const progress = await prisma.progress.findMany({
+    where: {
+      userId: user.id,
+      lessonId: { in: module.lessons.map(l => l.id) },
+      completed: true
+    }
+  })
+
+  const total = module.lessons.length
+  const completed = progress.length
+  const certificate = await prisma.certificate.findUnique({
+    where: { userId_moduleId: { userId: user.id, moduleId } }
+  })
+
+  return {
+    isComplete: total > 0 && completed === total,
+    total,
+    completed,
+    hasCertificate: !!certificate,
+    certificateCode: certificate?.verificationCode,
+    description: module.description
+  }
+}
+
+export async function getCourseCompletionStatus(courseId: string) {
+  const user = await getCurrentUser()
+  if (!user) return { isComplete: false, total: 0, completed: 0 }
+
+  const course = await prisma.course.findUnique({
+    where: { id: courseId },
+    include: {
+      modules: {
+        where: { published: true },
+        include: { lessons: { where: { published: true } } }
+      }
+    }
+  })
+
+  if (!course) return { isComplete: false, total: 0, completed: 0 }
+
+  const allLessonIds = course.modules.flatMap(m => m.lessons.map(l => l.id))
+
+  const progress = await prisma.progress.findMany({
+    where: {
+      userId: user.id,
+      lessonId: { in: allLessonIds },
+      completed: true
+    }
+  })
+
+  const total = allLessonIds.length
+  const completed = progress.length
+  const certificate = await prisma.certificate.findFirst({
+    where: { userId: user.id, courseId, type: "COURSE" }
+  })
+
+  return {
+    isComplete: total > 0 && completed === total,
+    total,
+    completed,
+    hasCertificate: !!certificate,
+    certificateCode: certificate?.verificationCode,
+    description: course.description
+  }
+}
+
+export async function issueCourseCertificate(courseId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const status = await getCourseCompletionStatus(courseId)
+  if (!status.isComplete) {
+    throw new Error("Você ainda não completou todas as aulas deste curso.")
+  }
+
+  if (status.hasCertificate) {
+    return status.certificateCode
+  }
+
+  const verificationCode = nanoid(10).toUpperCase()
+
+  await prisma.certificate.create({
+    data: {
+      userId: user.id,
+      courseId,
+      verificationCode,
+      type: "COURSE"
+    }
+  })
+
+  revalidatePath("/student/dashboard")
+  revalidatePath(`/student/courses`)
+
+  return verificationCode
+}
+
+export async function issueModuleCertificate(moduleId: string) {
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const status = await getModuleCompletionStatus(moduleId)
+  if (!status.isComplete) {
+    throw new Error("Você ainda não completou todas as aulas deste módulo.")
+  }
+
+  if (status.hasCertificate) {
+    return status.certificateCode
+  }
+
+  const module = await prisma.module.findUnique({
+    where: { id: moduleId },
+    select: { courseId: true }
+  })
+
+  if (!module) throw new Error("Module not found")
+
+  const verificationCode = nanoid(10).toUpperCase()
+
+  await prisma.certificate.create({
+    data: {
+      userId: user.id,
+      moduleId,
+      courseId: module.courseId,
+      verificationCode
+    }
+  })
+
+  revalidatePath("/student/dashboard")
+  revalidatePath(`/student/courses`)
+
+  return verificationCode
 }

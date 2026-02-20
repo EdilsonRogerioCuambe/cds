@@ -27,13 +27,14 @@ export type QuestionType = "multiple-choice" | "true-false" | "fill-blank" | "ma
 export interface Question {
   id: string
   type: QuestionType
-  text: string
+  question: string
   options?: string[]
   correctAnswer: any // string, array or boolean
   explanation: string
   pairs?: { left: string, right: string }[] // for matching
   items?: string[] // for ordering
   mediaUrl?: string // for listening
+  audioScript?: string // for listening tips
 }
 
 interface QuizBuilderProps {
@@ -48,6 +49,8 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
   const [type, setType] = useState(initialData?.type || "standard")
   const [points, setPoints] = useState(initialData?.points || 100)
   const [loading, setLoading] = useState(false)
+  const [timeLimit, setTimeLimit] = useState(initialData?.timeLimit || 600)
+  const [passingScore, setPassingScore] = useState(initialData?.passingScore || 70)
 
   // Deletion State
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null)
@@ -57,9 +60,9 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
     const newQuestion: Question = {
       id: Math.random().toString(36).substr(2, 9),
       type,
-      text: "",
+      question: "",
       options: type === "multiple-choice" ? ["", "", "", ""] : undefined,
-      correctAnswer: type === "true-false" ? "true" : type === "ordering" ? [] : "",
+      correctAnswer: type === "true-false" ? "true" : (type === "ordering" || type === "matching") ? undefined : "",
       explanation: "",
       pairs: type === "matching" ? [{ left: "", right: "" }, { left: "", right: "" }] : undefined,
       items: type === "ordering" ? ["", ""] : undefined,
@@ -97,6 +100,8 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
         description,
         type,
         points,
+        timeLimit: Number(timeLimit),
+        passingScore: Number(passingScore),
         questions
       })
       toast.success("Quiz salvo com sucesso!")
@@ -131,6 +136,18 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
               <Label>Instruções (Opcional)</Label>
               <Input value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
+            <div className="space-y-2">
+              <Label>Pontos (XP)</Label>
+              <Input type="number" value={points} onChange={(e) => setPoints(Number(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tempo Limite (segundos)</Label>
+              <Input type="number" value={timeLimit} onChange={(e) => setTimeLimit(Number(e.target.value))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Mínimo para Aprovação (%)</Label>
+              <Input type="number" value={passingScore} onChange={(e) => setPassingScore(Number(e.target.value))} />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -156,8 +173,8 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
               <div className="space-y-2">
                 <Label>Pergunta</Label>
                 <Textarea
-                  value={question.text}
-                  onChange={(e) => updateQuestion(question.id, { text: e.target.value })}
+                  value={question.question}
+                  onChange={(e) => updateQuestion(question.id, { question: e.target.value })}
                   placeholder="Digite o enunciado da questão..."
                 />
               </div>
@@ -307,9 +324,26 @@ export function QuizBuilder({ lessonId, initialData }: QuizBuilderProps) {
                   <div className="space-y-2">
                     <Label>Instrução ou Pergunta baseada no áudio</Label>
                     <Input
+                      value={question.question}
+                      onChange={(e) => updateQuestion(question.id, { question: e.target.value })}
+                      placeholder="Ex: O que o falante disse sobre o tempo?"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Resposta Correta (Opcional se for apenas para audição)</Label>
+                    <Input
                       value={question.correctAnswer}
                       onChange={(e) => updateQuestion(question.id, { correctAnswer: e.target.value })}
-                      placeholder="Ex: O que o falante disse sobre o tempo?"
+                      placeholder="A resposta esperada..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dica / Transcrição (Opcional)</Label>
+                    <Textarea
+                      value={question.audioScript}
+                      onChange={(e) => updateQuestion(question.id, { audioScript: e.target.value })}
+                      placeholder="O texto do áudio para ajudar o aluno..."
+                      className="h-20"
                     />
                   </div>
                 </div>

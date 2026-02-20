@@ -41,7 +41,7 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy
 } from "@dnd-kit/sortable"
-import { Edit, FileText, GripVertical, PlusCircle, Save, Trash2, Video } from "lucide-react"
+import { Edit, FileText, GripVertical, PlusCircle, Save, Trash2, Video, Zap } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -264,45 +264,76 @@ export function ModuleEditor({ initialData }: ModuleEditorProps) {
                   <div className="space-y-2">
                     {module.lessons.map((lesson: any) => (
                       <SortableItem key={lesson.id} id={lesson.id}>
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="shrink-0">
-                              <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                        {({ attributes, listeners }: { attributes: any, listeners: any }) => (
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg group border border-transparent hover:border-border transition-all">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div {...attributes} {...listeners} className="shrink-0">
+                                <GripVertical className="w-3.5 h-3.5 text-muted-foreground cursor-grab active:cursor-grabbing" />
+                              </div>
+                              <div className="shrink-0">
+                                {lesson.lessonType === "NOTES" ? (
+                                  <FileText className="w-4 h-4 text-blue-400" />
+                                ) : lesson.lessonType === "LIVE" ? (
+                                  <Video className="w-4 h-4 text-red-400" />
+                                ) : lesson.lessonType === "CHALLENGE" ? (
+                                  <Zap className="w-4 h-4 text-amber-400" />
+                                ) : (
+                                  <Video className="w-4 h-4 text-primary" />
+                                )}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium truncate">{lesson.title}</span>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                                  <Badge variant={lesson.published ? "default" : "secondary"} className="h-3.5 text-[8px] px-1 uppercase shrink-0">
+                                    {lesson.published ? "Publicado" : "Draft"}
+                                  </Badge>
+                                  {lesson.lessonType && lesson.lessonType !== "VIDEO" && (
+                                    <Badge variant="outline" className={`h-3.5 text-[8px] px-1 uppercase shrink-0 ${
+                                      lesson.lessonType === "NOTES" ? "border-blue-400/30 text-blue-400" :
+                                      lesson.lessonType === "LIVE" ? "border-red-400/30 text-red-400" :
+                                      lesson.lessonType === "CHALLENGE" ? "border-amber-400/30 text-amber-400" : ""
+                                    }`}>
+                                      {lesson.lessonType === "NOTES" ? "Notas" : lesson.lessonType === "LIVE" ? "Ao Vivo" : "Desafio"}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <div className="shrink-0">
-                              {lesson.videoUrl ? <Video className="w-4 h-4 text-primary" /> : <FileText className="w-4 h-4 text-muted-foreground" />}
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-medium truncate">{lesson.title}</span>
-                              <div className="flex gap-2 items-center">
-                                <Badge variant={lesson.published ? "default" : "secondary"} className="h-4 text-[9px] px-1 uppercase shrink-0">
-                                  {lesson.published ? "Publicado" : "Draft"}
-                                </Badge>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              {/* Publication toggle for quick access */}
+                              <div className="hidden sm:flex items-center gap-2 mr-2 pr-2 border-r border-border/50">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Publicar</span>
+                                <Switch
+                                  checked={lesson.published}
+                                  onCheckedChange={() => handleToggleLessonPublished(lesson.id, lesson.published)}
+                                  className="scale-75"
+                                />
+                              </div>
+
+                              <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                                  <Link
+                                    href={`/teacher/courses/lesson/${lesson.id}/edit`}
+                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </Link>
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmDelete(lesson.id, "lesson");
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            <Switch
-                              checked={lesson.published}
-                              onCheckedChange={() => handleToggleLessonPublished(lesson.id, lesson.published)}
-                              className="scale-75"
-                            />
-                            <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                                <Link
-                                  href={`/teacher/courses/lesson/${lesson.id}/edit`}
-                                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                  onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
-                                >
-                                  <Edit className="w-3.5 h-3.5" />
-                                </Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => confirmDelete(lesson.id, "lesson")}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
+                        )}
                       </SortableItem>
                     ))}
                   </div>
