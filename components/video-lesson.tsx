@@ -3,6 +3,7 @@
 import SplashScreen from "@/components/splash-screen"
 import { VideoMetadata } from "@/components/teacher/video-editor"
 import { VideoUpload } from "@/components/teacher/video-upload"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -12,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,6 +26,7 @@ import {
     ChevronRight,
     ChevronUp,
     Clock,
+    ExternalLink,
     FileText,
     Maximize,
     Minimize,
@@ -33,9 +36,14 @@ import {
     Plus,
     Settings,
     SkipForward,
+    Star,
+    Timer,
     Trash2,
+    Trophy,
+    Video,
     Volume2,
-    VolumeX
+    VolumeX,
+    Zap
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
@@ -43,32 +51,37 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { toast } from "sonner"
 
-const relatedLessons = [
-  {
-    id: "l17",
-    title: "Present Perfect Continuous",
-    duration: "14:30",
-    completed: true,
-  },
-  {
-    id: "l19",
-    title: "Past Perfect Continuous",
-    duration: "13:45",
-    completed: false,
-  },
-  {
-    id: "l20",
-    title: "Formal vs Informal Writing",
-    duration: "12:00",
-    completed: true,
-  },
-]
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+interface NextLesson {
+  id: string
+  title: string
+  duration: number | null
+  lessonType: string
+}
 
 interface VideoLessonProps {
-  currentLesson: any
+  currentLesson: {
+    id: string
+    title: string
+    module: string
+    level: string
+    duration: string
+    notes: string
+    vocabulary: any[]
+    videoUrl?: string
+    metadata?: VideoMetadata
+    lessonType: "VIDEO" | "NOTES" | "CHALLENGE" | "LIVE"
+    scheduledAt?: string | null
+    meetingUrl?: string | null
+    meetingPlatform?: string | null
+    challengeConfig?: { timeLimit?: number; passingScore?: number; xpReward?: number } | null
+    quizzes?: any[]
+  }
   isEditable?: boolean
   initialPosition?: number
   isCompleted?: boolean
+  nextLesson?: NextLesson | null
   onLessonUpdate?: (data: {
     content?: string
     vocabulary?: any
@@ -78,17 +91,454 @@ interface VideoLessonProps {
   }) => Promise<void>
 }
 
-export function VideoLesson({ currentLesson, isEditable = false, initialPosition = 0, isCompleted = false, onLessonUpdate }: VideoLessonProps) {
+// ─── Lesson Type Icon helper ──────────────────────────────────────────────────
+
+function lessonTypeIcon(type: string) {
+  switch (type) {
+    case "NOTES": return <FileText className="w-3.5 h-3.5" />
+    case "CHALLENGE": return <Zap className="w-3.5 h-3.5" />
+    case "LIVE": return <Video className="w-3.5 h-3.5" />
+    default: return <Play className="w-3.5 h-3.5" />
+  }
+}
+
+function lessonTypeLabel(type: string) {
+  switch (type) {
+    case "NOTES": return "Notas"
+    case "CHALLENGE": return "Desafio"
+    case "LIVE": return "Ao Vivo"
+    default: return "Vídeo"
+  }
+}
+
+// ─── NOTES Lesson ────────────────────────────────────────────────────────────
+
+function NotesLesson({
+  currentLesson,
+  completed,
+  onComplete,
+  nextLesson,
+  markdownComponents,
+}: {
+  currentLesson: VideoLessonProps["currentLesson"]
+  completed: boolean
+  onComplete: () => Promise<void>
+  nextLesson?: NextLesson | null
+  markdownComponents: any
+}) {
+  return (
+    <div className="max-w-screen-lg mx-auto p-4 sm:p-8 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="secondary" className="gap-1 text-xs">
+              <FileText className="w-3 h-3" /> Notas de Aula
+            </Badge>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-foreground leading-tight">
+            {currentLesson.title}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {currentLesson.module} · Nível {currentLesson.level}
+          </p>
+        </div>
+        {nextLesson && (
+          <Button size="sm" className="gap-1.5 w-fit shrink-0" asChild>
+            <Link href={`/student/lesson/${nextLesson.id}`}>
+              <SkipForward className="w-3.5 h-3.5" /> Próxima Aula
+            </Link>
+          </Button>
+        )}
+      </div>
+
+      {/* Notes Content */}
+      <Card className="border-border">
+        <CardHeader className="pb-2 border-b border-border">
+          <CardTitle className="text-base font-semibold font-display flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" /> Conteúdo da Aula
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {currentLesson.notes ? (
+            <div className="prose prose-invert max-w-none">
+              <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]}>
+                {currentLesson.notes}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">Nenhum conteúdo disponível ainda.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Complete Button */}
+      <Card className={cn("border-primary/20 bg-primary/[0.03] transition-all", completed && "bg-success/5 border-success/20")}>
+        <CardContent className="p-5 text-center">
+          <div className={cn("flex items-center justify-center w-12 h-12 rounded-full mx-auto mb-3", completed ? "bg-success/10 text-success" : "bg-primary/10 text-primary")}>
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
+          <p className="text-sm font-semibold text-foreground mb-1">
+            {completed ? "Aula Concluída!" : "Marcar como Concluída"}
+          </p>
+          <p className="text-xs text-muted-foreground mb-3">Ganhe 25 XP ao concluir</p>
+          <Button size="sm" className="w-full max-w-xs" onClick={onComplete} disabled={completed} variant={completed ? "secondary" : "default"}>
+            {completed ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Concluída</> : "Marcou como Concluída"}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── LIVE Lesson ─────────────────────────────────────────────────────────────
+
+function LiveLesson({
+  currentLesson,
+  completed,
+  onComplete,
+  nextLesson,
+}: {
+  currentLesson: VideoLessonProps["currentLesson"]
+  completed: boolean
+  onComplete: () => Promise<void>
+  nextLesson?: NextLesson | null
+}) {
+  const scheduledAt = currentLesson.scheduledAt ? new Date(currentLesson.scheduledAt) : null
+  const now = new Date()
+  const isLive = scheduledAt && Math.abs(now.getTime() - scheduledAt.getTime()) < 30 * 60 * 1000
+  const isPast = scheduledAt && now > scheduledAt
+  const isFuture = scheduledAt && now < scheduledAt
+
+  const platformLabel: Record<string, string> = { zoom: "Zoom", meet: "Google Meet", teams: "Microsoft Teams" }
+  const platformColor: Record<string, string> = { zoom: "bg-blue-500/10 text-blue-400", meet: "bg-green-500/10 text-green-400", teams: "bg-purple-500/10 text-purple-400" }
+
+  return (
+    <div className="max-w-screen-lg mx-auto p-4 sm:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Badge variant="secondary" className={cn("gap-1 text-xs", isLive && "bg-red-500/10 text-red-400 border-red-500/30 animate-pulse")}>
+              <Video className="w-3 h-3" /> {isLive ? "● AO VIVO AGORA" : "Aula Síncrona"}
+            </Badge>
+            {currentLesson.meetingPlatform && (
+              <Badge variant="outline" className={cn("text-xs gap-1", platformColor[currentLesson.meetingPlatform] || "")}>
+                {platformLabel[currentLesson.meetingPlatform] || currentLesson.meetingPlatform}
+              </Badge>
+            )}
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-foreground leading-tight">{currentLesson.title}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{currentLesson.module} · Nível {currentLesson.level}</p>
+        </div>
+        {nextLesson && (
+          <Button size="sm" className="gap-1.5 w-fit shrink-0" asChild>
+            <Link href={`/student/lesson/${nextLesson.id}`}><SkipForward className="w-3.5 h-3.5" /> Próxima Aula</Link>
+          </Button>
+        )}
+      </div>
+
+      {/* Main Card */}
+      <Card className={cn("overflow-hidden border-2 transition-all", isLive ? "border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]" : "border-border")}>
+        <CardContent className="p-0">
+          <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-8 sm:p-12 text-center space-y-6">
+            <div className={cn("flex items-center justify-center w-20 h-20 rounded-2xl mx-auto", isLive ? "bg-red-500/20 text-red-400" : "bg-primary/10 text-primary")}>
+              <Video className="w-10 h-10" />
+            </div>
+
+            {scheduledAt ? (
+              <div className="space-y-1">
+                {isFuture && (
+                  <>
+                    <p className="text-sm text-muted-foreground">Agendada para</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {scheduledAt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
+                    <p className="text-primary font-mono text-lg font-bold">
+                      {scheduledAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} (seu horário local)
+                    </p>
+                  </>
+                )}
+                {isLive && (
+                  <p className="text-red-400 font-bold text-lg animate-pulse">Aula a decorrer agora!</p>
+                )}
+                {isPast && !isLive && (
+                  <p className="text-muted-foreground">Esta sessão já terminou.</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">Horário a confirmar pelo professor.</p>
+            )}
+
+            {currentLesson.meetingUrl ? (
+              <Button
+                size="lg"
+                className={cn("gap-2 text-base font-semibold", isLive && "bg-red-500 hover:bg-red-600")}
+                disabled={!isLive && isFuture!}
+                asChild
+              >
+                <a href={currentLesson.meetingUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-5 h-5" />
+                  {isLive ? "Entrar na Aula Agora" : isFuture ? "Em Breve..." : "Ver Gravação"}
+                </a>
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">Link da reunião ainda não disponível.</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes if any */}
+      {currentLesson.notes && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> Materiais de Apoio</CardTitle></CardHeader>
+          <CardContent className="pt-4">
+            <div className="prose prose-invert max-w-none text-sm">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentLesson.notes}</ReactMarkdown>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Completion */}
+      {isPast && (
+        <Card className={cn("border-primary/20 bg-primary/[0.03]", completed && "border-success/20 bg-success/5")}>
+          <CardContent className="p-5 text-center">
+            <p className="text-sm font-semibold mb-3">{completed ? "Aula Marcada como Concluída" : "Participou desta aula?"}</p>
+            <Button size="sm" className="w-full max-w-xs" onClick={onComplete} disabled={completed} variant={completed ? "secondary" : "default"}>
+              {completed ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Concluída</> : "Sim, Participei (+25 XP)"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+// ─── CHALLENGE Lesson ─────────────────────────────────────────────────────────
+
+function ChallengeLesson({
+  currentLesson,
+  completed,
+  onComplete,
+  nextLesson,
+}: {
+  currentLesson: VideoLessonProps["currentLesson"]
+  completed: boolean
+  onComplete: () => Promise<void>
+  nextLesson?: NextLesson | null
+}) {
+  const quiz = currentLesson.quizzes?.[0]
+  const config = currentLesson.challengeConfig
+  const totalTime = config?.timeLimit || 300
+  const [started, setStarted] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(totalTime)
+  const [currentQ, setCurrentQ] = useState(0)
+  const [answers, setAnswers] = useState<Record<number, string>>({})
+  const [submitted, setSubmitted] = useState(false)
+  const [score, setScore] = useState(0)
+
+  const questions: any[] = quiz?.questions ? (typeof quiz.questions === "string" ? JSON.parse(quiz.questions) : quiz.questions) : []
+  const passingScore = config?.passingScore || 70
+  const xpReward = config?.xpReward || quiz?.points || 100
+  const passed = score >= passingScore
+
+  useEffect(() => {
+    if (!started || submitted) return
+    const interval = setInterval(() => {
+      setTimeLeft(t => {
+        if (t <= 1) { clearInterval(interval); handleSubmit(); return 0 }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [started, submitted])
+
+  const handleSubmit = () => {
+    if (!quiz) return
+    let correct = 0
+    questions.forEach((q, i) => {
+      if (answers[i] === q.correctAnswer) correct++
+    })
+    const pct = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0
+    setScore(pct)
+    setSubmitted(true)
+  }
+
+  const formatTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
+  const timerColor = timeLeft < 30 ? "text-red-400" : timeLeft < 60 ? "text-yellow-400" : "text-primary"
+
+  if (!quiz || questions.length === 0) {
+    return (
+      <div className="max-w-screen-lg mx-auto p-4 sm:p-8 space-y-6">
+        <div>
+          <Badge variant="secondary" className="gap-1 text-xs mb-2"><Zap className="w-3 h-3" /> Desafio</Badge>
+          <h1 className="text-2xl font-bold font-display">{currentLesson.title}</h1>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center text-muted-foreground">
+            <Zap className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p className="text-sm">Nenhum desafio disponível ainda. O professor irá adicionar em breve.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!started && !submitted) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
+        <div>
+          <Badge variant="secondary" className="gap-1 text-xs mb-2 bg-amber-500/10 text-amber-400 border-amber-500/30"><Zap className="w-3 h-3" /> Desafio</Badge>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display">{currentLesson.title}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{currentLesson.module} · Nível {currentLesson.level}</p>
+        </div>
+        <Card className="overflow-hidden border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+          <CardContent className="p-8 text-center space-y-6">
+            <div className="flex items-center justify-center w-20 h-20 rounded-2xl bg-amber-500/10 text-amber-400 mx-auto">
+              <Trophy className="w-10 h-10" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-2">{quiz.title}</h2>
+              {quiz.description && <p className="text-sm text-muted-foreground">{quiz.description}</p>}
+            </div>
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-background/50 rounded-xl">
+                <p className="text-lg font-bold text-foreground">{questions.length}</p>
+                <p className="text-xs text-muted-foreground">Questões</p>
+              </div>
+              <div className="p-3 bg-background/50 rounded-xl">
+                <p className="text-lg font-bold text-foreground font-mono">{formatTime(totalTime)}</p>
+                <p className="text-xs text-muted-foreground">Tempo</p>
+              </div>
+              <div className="p-3 bg-background/50 rounded-xl">
+                <p className="text-lg font-bold text-amber-400">+{xpReward} XP</p>
+                <p className="text-xs text-muted-foreground">Recompensa</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">Pontuação mínima para passar: <span className="text-foreground font-bold">{passingScore}%</span></p>
+            <Button size="lg" className="gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold" onClick={() => setStarted(true)}>
+              <Zap className="w-5 h-5" /> Iniciar Desafio
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (submitted) {
+    return (
+      <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
+        <Card className={cn("overflow-hidden border-2", passed ? "border-success/30 bg-gradient-to-br from-success/5 to-success/10" : "border-destructive/30 bg-gradient-to-br from-destructive/5 to-destructive/10")}>
+          <CardContent className="p-8 text-center space-y-4">
+            <div className={cn("flex items-center justify-center w-20 h-20 rounded-2xl mx-auto", passed ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")}>
+              {passed ? <Trophy className="w-10 h-10" /> : <Zap className="w-10 h-10" />}
+            </div>
+            <h2 className="text-2xl font-bold">{passed ? "Desafio Concluído! 🎉" : "Quase lá!"}</h2>
+            <div className="space-y-2">
+              <p className="text-4xl font-black font-mono">{score}%</p>
+              <Progress value={score} className="h-3 max-w-xs mx-auto" />
+              <p className="text-sm text-muted-foreground">{Math.round(score / 100 * questions.length)} de {questions.length} corretas</p>
+            </div>
+            {passed && (
+              <div className="flex items-center justify-center gap-2 p-3 bg-amber-500/10 rounded-xl">
+                <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+                <span className="text-sm font-bold text-amber-400">+{xpReward} XP desbloqueados!</span>
+              </div>
+            )}
+            <div className="flex gap-3 justify-center pt-2">
+              {!passed && (
+                <Button variant="outline" onClick={() => { setStarted(false); setSubmitted(false); setAnswers({}); setTimeLeft(totalTime); setCurrentQ(0) }}>
+                  Tentar Novamente
+                </Button>
+              )}
+              {passed && !completed && (
+                <Button onClick={onComplete} className="gap-2">
+                  <CheckCircle2 className="w-4 h-4" /> Concluir Aula
+                </Button>
+              )}
+              {nextLesson && (
+                <Button asChild variant={passed ? "default" : "outline"}>
+                  <Link href={`/student/lesson/${nextLesson.id}`}><SkipForward className="w-4 h-4 mr-1.5" /> Próxima Aula</Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const q = questions[currentQ]
+  const options: string[] = q.options || []
+
+  return (
+    <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-4">
+      {/* Timer & Progress */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Questão {currentQ + 1}/{questions.length}</span>
+        </div>
+        <div className={cn("flex items-center gap-1.5 font-mono font-bold text-lg tabular-nums", timerColor)}>
+          <Timer className="w-4 h-4" /> {formatTime(timeLeft)}
+        </div>
+      </div>
+      <Progress value={((currentQ + 1) / questions.length) * 100} className="h-1.5" />
+
+      <Card className="border-amber-500/20">
+        <CardContent className="p-6 sm:p-8 space-y-6">
+          <p className="text-base sm:text-lg font-semibold text-foreground leading-relaxed">{q.question}</p>
+          <div className="space-y-3">
+            {options.map((opt: string) => (
+              <button
+                key={opt}
+                onClick={() => setAnswers(a => ({ ...a, [currentQ]: opt }))}
+                className={cn(
+                  "w-full text-left p-4 rounded-xl border-2 transition-all text-sm font-medium",
+                  answers[currentQ] === opt
+                    ? "border-amber-500 bg-amber-500/10 text-foreground"
+                    : "border-border hover:border-amber-500/50 hover:bg-muted/50 text-foreground/80"
+                )}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between pt-2">
+            <Button variant="ghost" size="sm" onClick={() => setCurrentQ(q => Math.max(0, q - 1))} disabled={currentQ === 0}>
+              Anterior
+            </Button>
+            {currentQ < questions.length - 1 ? (
+              <Button size="sm" onClick={() => setCurrentQ(q => q + 1)} disabled={!answers[currentQ]}>
+                Próxima
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleSubmit} disabled={!answers[currentQ]} className="bg-amber-500 hover:bg-amber-600 text-white">
+                Submeter
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Main VideoLesson Component ───────────────────────────────────────────────
+
+export function VideoLesson({ currentLesson, isEditable = false, initialPosition = 0, isCompleted = false, nextLesson, onLessonUpdate }: VideoLessonProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const lastSyncTimeRef = useRef<number>(Date.now())
-  const lastPositionRef = useRef<number>(initialPosition)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [completed, setCompleted] = useState(isCompleted)
   const [isMuted, setIsMuted] = useState(false)
   const [volume, setVolume] = useState(1)
-  const [showSubtitles, setShowSubtitles] = useState(true)
   const [showControls, setShowControls] = useState(true)
   const [isTheaterMode, setIsTheaterMode] = useState(false)
   const [playbackRate, setPlaybackRate] = useState(1)
@@ -97,9 +547,7 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
   const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null)
   const [isInitialized, setIsInitialized] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Editable State
   const [editableContent, setEditableContent] = useState(currentLesson.notes || "")
   const [editableVocab, setEditableVocab] = useState(currentLesson.vocabulary || [])
   const [isSaving, setIsSaving] = useState(false)
@@ -117,215 +565,119 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
     ul: ({ ...props }) => <ul className="list-none space-y-2 mb-6" {...props} />,
     li: ({ ...props }) => (
       <li className="flex items-start gap-3 text-foreground/70 text-[14px]">
-        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0 shadow-[0_0_8px_rgba(19,146,80,0.5)]" />
+        <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
         <span {...props} />
       </li>
     ),
     strong: ({ ...props }) => <strong className="text-foreground font-bold border-b border-primary/30" {...props} />,
-    blockquote: ({ ...props }) => (
-      <blockquote className="border-l-4 border-muted bg-muted/20 px-6 py-4 rounded-r-xl italic my-6 text-foreground/60" {...props} />
-    ),
+    blockquote: ({ ...props }) => <blockquote className="border-l-4 border-muted bg-muted/20 px-6 py-4 rounded-r-xl italic my-6 text-foreground/60" {...props} />,
     code: ({ ...props }) => <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono text-xs" {...props} />,
-    table: ({ ...props }) => (
-      <div className="my-8 overflow-x-auto rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm shadow-xl">
-        <table className="w-full border-collapse text-left" {...props} />
-      </div>
-    ),
+    table: ({ ...props }) => <div className="my-8 overflow-x-auto rounded-xl border border-white/5 bg-black/20"><table className="w-full border-collapse text-left" {...props} /></div>,
     thead: ({ ...props }) => <thead className="bg-primary/5 uppercase tracking-wider font-mono text-[10px] text-primary" {...props} />,
     th: ({ ...props }) => <th className="px-6 py-4 font-bold border-b border-white/10" {...props} />,
     td: ({ ...props }) => <td className="px-6 py-4 text-foreground/70 border-b border-white/5 text-[13px]" {...props} />,
-    tr: ({ ...props }) => <tr className="hover:bg-white/5 transition-colors duration-200" {...props} />,
-  }
-
-  // Sync Heartbeat
-  useEffect(() => {
-    if (isEditable || !isPlaying) return
-
-    const interval = setInterval(async () => {
-      if (!videoRef.current) return
-
-      const currentPos = Math.floor(videoRef.current.currentTime)
-      const now = Date.now()
-      const watchTimeSeconds = Math.round((now - lastSyncTimeRef.current) / 1000)
-
-      if (watchTimeSeconds >= 5) { // Sync every 5+ seconds of actual watch time
-        try {
-          await syncLessonProgress(currentLesson.id, currentPos, watchTimeSeconds)
-          lastSyncTimeRef.current = now
-          lastPositionRef.current = currentPos
-        } catch (error) {
-          console.error("Failed to sync progress:", error)
-        }
-      }
-    }, 10000) // Check every 10 seconds
-
-    return () => clearInterval(interval)
-  }, [isPlaying, isEditable, currentLesson.id])
-
-  // Controls Visibility Logic
-  const handleMouseMove = () => {
-    setShowControls(true)
-    if (controlsTimeout) clearTimeout(controlsTimeout)
-    const timeout = setTimeout(() => {
-      if (isPlaying) setShowControls(false)
-    }, 3000)
-    setControlsTimeout(timeout)
-  }
-
-  // Initial Position Sync - Only run once on mount or when video element is ready
-  useEffect(() => {
-    if (videoRef.current && !isInitialized && currentLesson.videoUrl) {
-      const trimStart = currentLesson.metadata?.trimStart || 0
-      const actualInitialPos = initialPosition > trimStart ? initialPosition : trimStart
-      videoRef.current.currentTime = actualInitialPos
-      setIsInitialized(true)
-    }
-  }, [initialPosition, currentLesson.metadata?.trimStart, currentLesson.videoUrl, isInitialized])
-
-  // Handle Trim End
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video || !currentLesson.metadata?.trimEnd || currentLesson.metadata.trimEnd <= 0) return
-
-    const handleTimeUpdate = () => {
-      // Small buffer to avoid getting stuck at exactly trimEnd
-      if (video.currentTime >= currentLesson.metadata.trimEnd - 0.1) {
-        video.pause()
-        setIsPlaying(false)
-        video.currentTime = currentLesson.metadata.trimEnd
-      }
-    }
-
-    video.addEventListener("timeupdate", handleTimeUpdate)
-    return () => video.removeEventListener("timeupdate", handleTimeUpdate)
-  }, [currentLesson.metadata?.trimEnd])
-
-  // Fullscreen Listener
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener("fullscreenchange", handleFullscreenChange)
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange)
-  }, [])
-
-  const togglePlay = async () => {
-    if (videoRef.current) {
-      try {
-        if (videoRef.current.paused) {
-          const playPromise = videoRef.current.play()
-          if (playPromise !== undefined) {
-            await playPromise
-          }
-        } else {
-          videoRef.current.pause()
-        }
-      } catch (error: any) {
-        if (error.name === "AbortError") {
-          console.log("Playback interrupted by a pause() call")
-        } else {
-          console.error("Playback error:", error)
-        }
-      }
-    }
-  }
-
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return
-
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(err => {
-        toast.error(`Error attempting to enable full-screen mode: ${err.message}`)
-      })
-    } else {
-      document.exitFullscreen()
-    }
+    tr: ({ ...props }) => <tr className="hover:bg-white/5 transition-colors" {...props} />,
   }
 
   const handleComplete = async () => {
     try {
       await completeLesson(currentLesson.id)
       setCompleted(true)
-      toast.success("Aula concluída! +25 XP")
-    } catch (error) {
+      toast.success("Aula concluída! +25 XP 🎉")
+    } catch {
       toast.error("Erro ao marcar como concluída.")
     }
   }
 
-  const speeds = [0.75, 1, 1.25, 1.5, 2]
+  // Delegate to specialized components
+  if (!isEditable) {
+    if (currentLesson.lessonType === "NOTES") {
+      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
+      return <NotesLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} markdownComponents={markdownComponents} />
+    }
+    if (currentLesson.lessonType === "LIVE") {
+      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
+      return <LiveLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
+    }
+    if (currentLesson.lessonType === "CHALLENGE") {
+      if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={800} />
+      return <ChallengeLesson currentLesson={currentLesson} completed={completed} onComplete={handleComplete} nextLesson={nextLesson} />
+    }
+  }
+
+  if (isLoading) return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={1500} />
+
+  // ── Sync heartbeat
+  useEffect(() => {
+    if (isEditable || !isPlaying) return
+    const interval = setInterval(async () => {
+      if (!videoRef.current) return
+      const currentPos = Math.floor(videoRef.current.currentTime)
+      const now = Date.now()
+      const watchTimeSeconds = Math.round((now - lastSyncTimeRef.current) / 1000)
+      if (watchTimeSeconds >= 5) {
+        try {
+          await syncLessonProgress(currentLesson.id, currentPos, watchTimeSeconds)
+          lastSyncTimeRef.current = now
+        } catch {}
+      }
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [isPlaying, isEditable, currentLesson.id])
+
+  // ── Fullscreen
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener("fullscreenchange", handler)
+    return () => document.removeEventListener("fullscreenchange", handler)
+  }, [])
+
+  // ── Init position
+  useEffect(() => {
+    if (videoRef.current && !isInitialized && currentLesson.videoUrl) {
+      const trimStart = currentLesson.metadata?.trimStart || 0
+      videoRef.current.currentTime = initialPosition > trimStart ? initialPosition : trimStart
+      setIsInitialized(true)
+    }
+  }, [initialPosition, currentLesson.metadata?.trimStart, currentLesson.videoUrl, isInitialized])
+
+  const handleMouseMove = () => {
+    setShowControls(true)
+    if (controlsTimeout) clearTimeout(controlsTimeout)
+    const t = setTimeout(() => { if (isPlaying) setShowControls(false) }, 3000)
+    setControlsTimeout(t)
+  }
+
+  const togglePlay = async () => {
+    if (!videoRef.current) return
+    try {
+      if (videoRef.current.paused) { await videoRef.current.play() } else { videoRef.current.pause() }
+    } catch {}
+  }
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return
+    if (!document.fullscreenElement) { containerRef.current.requestFullscreen() } else { document.exitFullscreen() }
+  }
+
+  const toggleMute = () => { if (videoRef.current) { videoRef.current.muted = !isMuted; setIsMuted(!isMuted) } }
+  const handleVolumeChange = (value: number[]) => { const v = value[0] / 100; setVolume(v); if (videoRef.current) videoRef.current.volume = v; if (v > 0) setIsMuted(false) }
+  const handleSpeedChange = (speed: number) => { setPlaybackRate(speed); if (videoRef.current) videoRef.current.playbackRate = speed }
+  const handleSeek = (value: number[]) => { if (videoRef.current) { const d = currentLesson.metadata?.trimEnd || duration || 1; videoRef.current.currentTime = (value[0] / 100) * d; setCurrentTime(videoRef.current.currentTime) } }
+  const toggleTheaterMode = () => setIsTheaterMode(!isTheaterMode)
+  const formatT = (s: number) => `${Math.floor(s / 60)}:${Math.floor(s % 60).toString().padStart(2, "0")}`
+
+  const addVocabItem = () => setEditableVocab([...editableVocab, { word: "", definition: "", example: "" }])
+  const removeVocabItem = (i: number) => setEditableVocab(editableVocab.filter((_: any, idx: number) => idx !== i))
+  const handleUpdateVocab = (i: number, field: string, value: string) => { const nv = [...editableVocab]; nv[i] = { ...nv[i], [field]: value }; setEditableVocab(nv) }
 
   const handleSave = async (data: any) => {
     if (!onLessonUpdate) return
     setIsSaving(true)
-    try {
-      await onLessonUpdate(data)
-    } finally {
-      setIsSaving(false)
-    }
+    try { await onLessonUpdate(data) } finally { setIsSaving(false) }
   }
 
-  const handleUpdateVocab = (index: number, field: string, value: string) => {
-    const newVocab = [...editableVocab]
-    newVocab[index] = { ...newVocab[index], [field]: value }
-    setEditableVocab(newVocab)
-  }
-
-  const handleSeek = (value: number[]) => {
-    if (videoRef.current) {
-      const targetDuration = currentLesson.metadata?.trimEnd || duration || videoRef.current.duration || 1
-      videoRef.current.currentTime = (value[0] / 100) * targetDuration
-      setCurrentTime(videoRef.current.currentTime)
-    }
-  }
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted
-      setIsMuted(!isMuted)
-    }
-  }
-
-  const handleVolumeChange = (value: number[]) => {
-    const newVol = value[0] / 100
-    setVolume(newVol)
-    if (videoRef.current) {
-      videoRef.current.volume = newVol
-    }
-    if (newVol > 0) setIsMuted(false)
-  }
-
-  const handleSpeedChange = (speed: number) => {
-    setPlaybackRate(speed)
-    if (videoRef.current) {
-      videoRef.current.playbackRate = speed
-    }
-  }
-
-  const toggleTheaterMode = () => {
-    setIsTheaterMode(!isTheaterMode)
-    toast.info(isTheaterMode ? "Modo normal ativado" : "Modo Cinema ativado", {
-      position: "bottom-center"
-    })
-  }
-
-  const formatTimeSeconds = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
-
-  const addVocabItem = () => {
-    setEditableVocab([...editableVocab, { word: "", definition: "", example: "" }])
-  }
-
-  const removeVocabItem = (index: number) => {
-    setEditableVocab(editableVocab.filter((_: any, i: number) => i !== index))
-  }
-
-  if (isLoading) {
-    return <SplashScreen onComplete={() => setIsLoading(false)} minDuration={1500} />
-  }
-
+  // VIDEO or EDITABLE view
   return (
     <div className="max-w-screen-2xl mx-auto p-4 sm:p-4 lg:p-8">
       {/* Breadcrumb */}
@@ -333,208 +685,109 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
         {isEditable ? (
           <span className="text-muted-foreground">Edição de Aula</span>
         ) : (
-          <Link href="/courses" className="hover:text-foreground transition-colors">
-            Courses
-          </Link>
+          <Link href="/student/courses" className="hover:text-foreground transition-colors">Cursos</Link>
         )}
         <ChevronRight className="w-3.5 h-3.5" />
         <span>{currentLesson.level}</span>
         <ChevronRight className="w-3.5 h-3.5" />
         <span>{currentLesson.module}</span>
         <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-foreground font-medium">
-          {currentLesson.title}
-        </span>
+        <span className="text-foreground font-medium">{currentLesson.title}</span>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 w-full">
-        {/* Main Content (Player & Info) */}
-        <div className="flex-1 min-w-0 space-y-6 max-w-3xl lg:max-w-none mx-auto w-full lg:w-auto">
-          {/* Video Player or Upload */}
+        {/* Main */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Player */}
           <Card className="overflow-hidden">
             {isEditable ? (
               <div className="p-1">
-                <VideoUpload
-                  initialUrl={currentLesson.videoUrl}
-                  onUploadComplete={(url, duration, metadata) => handleSave({ videoUrl: url, duration, metadata })}
-                />
+                <VideoUpload initialUrl={currentLesson.videoUrl} onUploadComplete={(url, dur, meta) => handleSave({ videoUrl: url, duration: dur, metadata: meta })} />
               </div>
             ) : (
               <div
                 ref={containerRef}
-                className={cn(
-                  "relative bg-neutral-950 aspect-video flex items-center justify-center transition-all duration-500 overflow-hidden group",
-                  isTheaterMode && !isFullscreen ? "fixed inset-0 z-[100] bg-black/95" : "",
-                  isFullscreen ? "w-full h-full" : ""
-                )}
+                className={cn("relative bg-neutral-950 aspect-video flex items-center justify-center transition-all duration-500 overflow-hidden group", isTheaterMode && !isFullscreen ? "fixed inset-0 z-[100] bg-black/95" : "")}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() => isPlaying && setShowControls(false)}
               >
-                {!currentLesson.videoUrl && !isEditable && (
+                {!currentLesson.videoUrl && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-50 text-white/50 flex-col gap-2">
                     <VolumeX className="w-12 h-12 opacity-20" />
-                    <p className="text-sm font-mono tracking-widest uppercase">Video Source Pending</p>
+                    <p className="text-sm font-mono tracking-widest uppercase">Vídeo não disponível</p>
                   </div>
                 )}
-                {/* Video base layer */}
                 <video
-                  key={currentLesson.id + (currentLesson.videoUrl || "empty")}
+                  key={currentLesson.id + (currentLesson.videoUrl || "")}
                   ref={videoRef}
-                  src={currentLesson.videoUrl || undefined}
+                  src={currentLesson.videoUrl}
                   className="w-full h-full object-contain"
                   preload="metadata"
-                  style={{
-                    filter: currentLesson.metadata ? `brightness(${currentLesson.metadata.brightness}%) contrast(${currentLesson.metadata.contrast}%) saturate(${currentLesson.metadata.saturation}%) ${currentLesson.metadata.preset === 'futuristic' ? 'hue-rotate(180deg) saturate(1.5)' : ''}` : undefined
-                  }}
+                  style={{ filter: currentLesson.metadata ? `brightness(${currentLesson.metadata.brightness}%) contrast(${currentLesson.metadata.contrast}%) saturate(${currentLesson.metadata.saturation}%)` : undefined }}
                   onPause={() => setIsPlaying(false)}
                   onPlay={() => setIsPlaying(true)}
-                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                  onDurationChange={(e) => setDuration(e.currentTarget.duration)}
-                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                  onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
+                  onDurationChange={e => setDuration(e.currentTarget.duration)}
+                  onTimeUpdate={e => setCurrentTime(e.currentTarget.currentTime)}
                   onClick={togglePlay}
-                  onContextMenu={(e) => e.preventDefault()}
+                  onContextMenu={e => e.preventDefault()}
                   controlsList="nodownload"
                 />
-
-                {/* HUD Overlay - Top Left */}
-                <div className={cn(
-                  "absolute top-4 left-4 sm:top-6 sm:left-6 flex flex-col gap-1 transition-all duration-500",
-                  showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-                )}>
-                  <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary animate-pulse" />
-                    <span className="font-mono text-[8px] sm:text-[10px] text-primary uppercase tracking-[0.2em]">Live Session</span>
+                {/* HUD Top Left */}
+                <div className={cn("absolute top-4 left-4 flex flex-col gap-1 transition-all duration-500", showControls ? "opacity-100" : "opacity-0")}>
+                  <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <span className="font-mono text-[10px] text-primary uppercase tracking-[0.2em]">Live Session</span>
                   </div>
-                  <h3 className="text-white font-display font-bold text-sm sm:text-lg drop-shadow-lg truncate max-w-[150px] sm:max-w-none">{currentLesson.title}</h3>
+                  <h3 className="text-white font-display font-bold text-lg drop-shadow-lg truncate max-w-xs">{currentLesson.title}</h3>
                 </div>
-
-                {/* HUD Overlay - Top Right */}
-                <div className={cn(
-                  "absolute top-6 right-6 transition-all duration-500 hidden sm:block",
-                  showControls ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
-                )}>
-                   <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-2 rounded-xl flex items-center gap-4 text-white/80 font-mono text-xs">
-                     <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{formatTimeSeconds(currentTime)}</span>
-                     <span className="opacity-40">|</span>
-                     <span>XP +25</span>
-                   </div>
-                </div>
-
-                {/* Center Play/Pause Ripple */}
+                {/* Center Play */}
                 {!isPlaying && (
-                   <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      togglePlay();
-                    }}
-                    className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors pointer-events-auto"
-                   >
-                     <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)] scale-110 animate-in zoom-in-50 duration-200">
-                        <Play className="w-6 h-6 sm:w-10 sm:h-10 ml-1 sm:ml-1.5 fill-current" />
-                     </div>
-                   </button>
-                )}
-
-                {/* Subtitles (Simulation) */}
-                {showSubtitles && isPlaying && (
-                  <div className="absolute bottom-24 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-md border border-white/10 rounded-xl text-white text-sm max-w-md text-center animate-in slide-in-from-bottom-2 duration-300">
-                    {"Nossas IAs estão processando a fala em tempo real..."}
-                  </div>
-                )}
-
-                {/* Custom Control Bar */}
-                <div className={cn(
-                  "absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-4 sm:pb-6 px-3 sm:px-6 transition-all duration-500 ease-out flex flex-col gap-2 sm:gap-4",
-                  showControls ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-                )}>
-                  {/* Progress Area */}
-                  <div className="group/progress relative h-2 sm:h-1 flex items-center mb-1 sm:mb-2 px-2 sm:px-0">
-                    <Slider
-                      value={[((currentTime || 0) / (currentLesson.metadata?.trimEnd || duration || videoRef.current?.duration || 1)) * 100]}
-                      max={100}
-                      step={0.1}
-                      onValueChange={handleSeek}
-                      className="cursor-pointer"
-                    />
-                    {/* Progress Glow Emitter */}
-                    <div className="absolute inset-y-0 left-0 bg-primary/40 blur-md pointer-events-none" style={{ width: `${((currentTime || 0) / (duration || 1)) * 100}%` }} />
-                  </div>
-
-                  {/* Main Buttons */}
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2 sm:gap-4">
-                       <button onClick={togglePlay} className="text-white hover:text-primary transition-colors transform active:scale-90 p-1">
-                         {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />}
-                       </button>
-
-                       <button onClick={toggleMute} className="flex sm:hidden text-white hover:text-primary transition-colors p-1">
-                          {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                       </button>
-
-                       <div className="hidden sm:flex items-center gap-2 group/volume relative">
-                          <button onClick={toggleMute} className="text-white hover:text-primary transition-colors">
-                            {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
-                          </button>
-                          <div className="w-0 group-hover/volume:w-20 transition-all duration-300 overflow-hidden flex items-center pr-2">
-                             <Slider
-                              value={[isMuted ? 0 : volume * 100]}
-                              max={100}
-                              onValueChange={handleVolumeChange}
-                              className="w-20 cursor-pointer"
-                             />
-                          </div>
-                       </div>
-
-                       <div className="text-white/80 font-mono text-[10px] sm:text-xs flex items-center gap-1 sm:gap-2">
-                          <span className="text-primary font-bold">{formatTimeSeconds(currentTime)}</span>
-                          <span className="opacity-30">/</span>
-                          <span className="hidden xs:inline">{formatTimeSeconds(duration)}</span>
-                          <span className="xs:hidden opacity-50">{formatTimeSeconds(duration).split(':')[0]}m</span>
-                       </div>
+                  <button type="button" onClick={e => { e.stopPropagation(); togglePlay() }} className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors">
+                    <div className="w-20 h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)]">
+                      <Play className="w-10 h-10 ml-1.5 fill-current" />
                     </div>
-
-                    <div className="flex items-center gap-2 sm:gap-4">
-                       {/* Speed Selector */}
-                       <DropdownMenu modal={false}>
-                         <DropdownMenuTrigger asChild>
-                           <button className="text-white/80 hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors">
-                             <Settings className="w-3.5 h-3.5 shrink-0" />
-                             {playbackRate}x
-                           </button>
-                         </DropdownMenuTrigger>
-                         <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-white/10 text-white min-w-[80px]">
-                           {[0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                             <DropdownMenuItem
-                              key={speed}
-                              onClick={() => handleSpeedChange(speed)}
-                              className={cn(
-                                "flex justify-center items-center text-xs font-mono py-2 focus:bg-primary focus:text-primary-foreground",
-                                playbackRate === speed && "text-primary font-bold"
-                              )}
-                             >
-                               {speed}x
-                             </DropdownMenuItem>
-                           ))}
-                         </DropdownMenuContent>
-                       </DropdownMenu>
-
-                       <button
-                        onClick={toggleTheaterMode}
-                        className={cn(
-                          "hidden md:flex text-white/80 hover:text-white p-1.5 transition-colors rounded-lg",
-                          isTheaterMode && "text-primary bg-primary/10"
-                        )}
-                       >
-                         {isTheaterMode ? <Minimize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
-                       </button>
-
-                        <button
-                         onClick={toggleFullscreen}
-                         className="text-white/80 hover:text-white p-1 transition-colors transform active:scale-95"
-                        >
-                          {isFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize className="w-5 h-5" />}
+                  </button>
+                )}
+                {/* Controls */}
+                <div className={cn("absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pt-20 pb-6 px-6 transition-all duration-500 flex flex-col gap-4", showControls ? "opacity-100" : "opacity-0 pointer-events-none")}>
+                  <div className="relative h-1 flex items-center">
+                    <Slider value={[((currentTime || 0) / (currentLesson.metadata?.trimEnd || duration || 1)) * 100]} max={100} step={0.1} onValueChange={handleSeek} className="cursor-pointer" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <button onClick={togglePlay} className="text-white hover:text-primary transition-colors">
+                        {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+                      </button>
+                      <div className="flex items-center gap-2 group/volume">
+                        <button onClick={toggleMute} className="text-white hover:text-primary transition-colors">
+                          {isMuted || volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                         </button>
+                        <div className="w-0 group-hover/volume:w-20 overflow-hidden transition-all duration-300">
+                          <Slider value={[isMuted ? 0 : volume * 100]} max={100} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
+                        </div>
+                      </div>
+                      <span className="text-white/80 font-mono text-xs"><span className="text-primary font-bold">{formatT(currentTime)}</span> / {formatT(duration)}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <DropdownMenu modal={false}>
+                        <DropdownMenuTrigger asChild>
+                          <button className="text-white/80 hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">
+                            <Settings className="w-3.5 h-3.5" /> {playbackRate}x
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-white/10 text-white min-w-[80px]">
+                          {[0.75, 1, 1.25, 1.5, 2].map(s => (
+                            <DropdownMenuItem key={s} onClick={() => handleSpeedChange(s)} className={cn("flex justify-center text-xs font-mono py-2 focus:bg-primary focus:text-primary-foreground", playbackRate === s && "text-primary font-bold")}>{s}x</DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <button onClick={toggleTheaterMode} className={cn("hidden md:flex text-white/80 hover:text-white p-1.5 rounded-lg transition-colors", isTheaterMode && "text-primary bg-primary/10")}>
+                        {isTheaterMode ? <Minimize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                      </button>
+                      <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
+                        {isFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize className="w-5 h-5" />}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -542,81 +795,48 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
             )}
           </Card>
 
-          {/* Lesson Info */}
+          {/* Lesson title row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-4 sm:px-0">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground leading-tight">
-                {currentLesson.title}
-              </h1>
+              <h1 className="text-xl sm:text-2xl font-bold font-display text-foreground">{currentLesson.title}</h1>
               <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2">
-                <span className="truncate">{currentLesson.module}</span>
-                <span className="opacity-30">&middot;</span>
-                <span>Level {currentLesson.level}</span>
-                <span className="opacity-30">&middot;</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5" />
-                  {currentLesson.duration}
-                </span>
+                <span>{currentLesson.module}</span><span className="opacity-30">·</span>
+                <span>Nível {currentLesson.level}</span><span className="opacity-30">·</span>
+                <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{currentLesson.duration}</span>
               </p>
             </div>
-            {!isEditable && (
-              <Button size="sm" className="gap-1.5 w-fit mt-2 sm:mt-0 h-9 px-4 text-xs sm:text-sm font-medium" variant="default" asChild>
-                <Link href="/student/dashboard">
-                  <SkipForward className="w-3.5 h-3.5" />
-                  Próxima Aula
+            {!isEditable && nextLesson && (
+              <Button size="sm" className="gap-1.5 w-fit h-9 px-4 font-medium" asChild>
+                <Link href={`/student/lesson/${nextLesson.id}`}>
+                  <SkipForward className="w-3.5 h-3.5" /> Próxima Aula
                 </Link>
               </Button>
             )}
           </div>
 
-          {/* Lesson Notes/Content */}
+          {/* Notes */}
           <Card>
             <CardHeader className="pb-0">
               <div className="flex items-center justify-between w-full">
-                <CardTitle className="text-base font-semibold font-display flex items-center gap-2 text-foreground">
-                  <FileText className="w-4 h-4 text-primary" />
-                  Notas da Aula
-                </CardTitle>
+                <CardTitle className="text-base font-semibold font-display flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> Notas da Aula</CardTitle>
                 {isEditable ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleSave({ content: editableContent })}
-                    disabled={isSaving}
-                  >
+                  <Button size="sm" variant="ghost" onClick={() => handleSave({ content: editableContent })} disabled={isSaving}>
                     {isSaving ? "Salvando..." : "Salvar Notas"}
                   </Button>
                 ) : (
                   <button onClick={() => setNotesExpanded(!notesExpanded)}>
-                    {notesExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    )}
+                    {notesExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                   </button>
                 )}
               </div>
             </CardHeader>
             <CardContent className="pt-4">
               {isEditable ? (
-                <Textarea
-                  value={editableContent}
-                  onChange={(e) => setEditableContent(e.target.value)}
-                  placeholder="Conteúdo da aula em Markdown..."
-                  rows={10}
-                  className="font-mono text-sm"
-                />
-              ) : (
-                notesExpanded && (
-                  <div className="prose prose-invert max-w-none">
-                    <ReactMarkdown
-                      components={markdownComponents as any}
-                      remarkPlugins={[remarkGfm]}
-                    >
-                      {editableContent}
-                    </ReactMarkdown>
-                  </div>
-                )
+                <Textarea value={editableContent} onChange={e => setEditableContent(e.target.value)} placeholder="Conteúdo da aula em Markdown..." rows={10} className="font-mono text-sm" />
+              ) : notesExpanded && (
+                <div className="prose prose-invert max-w-none">
+                  <ReactMarkdown components={markdownComponents as any} remarkPlugins={[remarkGfm]}>{editableContent}</ReactMarkdown>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -627,135 +847,80 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
           {/* Vocabulary */}
           <Card>
             <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base font-semibold font-display flex items-center gap-2 text-foreground">
-                <BookOpen className="w-4 h-4 text-primary" />
-                Vocabulário
-              </CardTitle>
+              <CardTitle className="text-base font-semibold font-display flex items-center gap-2"><BookOpen className="w-4 h-4 text-primary" />Vocabulário</CardTitle>
               {isEditable && (
                 <div className="flex gap-2">
-                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={addVocabItem}>
-                     <Plus className="w-4 h-4" />
-                   </Button>
-                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-[10px]"
-                    onClick={() => handleSave({ vocabulary: editableVocab })}
-                    disabled={isSaving}
-                   >
-                     {isSaving ? "..." : "Salvar"}
-                   </Button>
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={addVocabItem}><Plus className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px]" onClick={() => handleSave({ vocabulary: editableVocab })} disabled={isSaving}>{isSaving ? "..." : "Salvar"}</Button>
                 </div>
               )}
             </CardHeader>
             <CardContent>
               {isEditable ? (
                 <div className="space-y-4">
-                  {editableVocab.map((v: any, index: number) => (
-                    <div key={index} className="p-3 border rounded-lg space-y-2 relative group">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeVocabItem(index)}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                      <Input
-                        placeholder="Palavra"
-                        value={v.word}
-                        onChange={(e) => handleUpdateVocab(index, "word", e.target.value)}
-                        className="h-7 text-xs"
-                      />
-                      <Textarea
-                        placeholder="Definição"
-                        value={v.definition}
-                        onChange={(e) => handleUpdateVocab(index, "definition", e.target.value)}
-                        className="h-12 text-[10px] resize-none"
-                      />
-                      <Input
-                        placeholder="Exemplo"
-                        value={v.example}
-                        onChange={(e) => handleUpdateVocab(index, "example", e.target.value)}
-                        className="h-7 text-[10px] italic"
-                      />
+                  {editableVocab.map((v: any, i: number) => (
+                    <div key={i} className="p-3 border rounded-lg space-y-2 relative group">
+                      <Button size="icon" variant="ghost" className="absolute top-1 right-1 h-6 w-6 text-destructive opacity-0 group-hover:opacity-100" onClick={() => removeVocabItem(i)}><Trash2 className="w-3 h-3" /></Button>
+                      <Input placeholder="Palavra" value={v.word} onChange={e => handleUpdateVocab(i, "word", e.target.value)} className="h-7 text-xs" />
+                      <Textarea placeholder="Definição" value={v.definition} onChange={e => handleUpdateVocab(i, "definition", e.target.value)} className="h-12 text-[10px] resize-none" />
+                      <Input placeholder="Exemplo" value={v.example} onChange={e => handleUpdateVocab(i, "example", e.target.value)} className="h-7 text-[10px] italic" />
                     </div>
                   ))}
-                  {editableVocab.length === 0 && (
-                    <p className="text-center text-xs text-muted-foreground py-4 italic">Nenhum termo</p>
-                  )}
+                  {editableVocab.length === 0 && <p className="text-center text-xs text-muted-foreground py-4 italic">Nenhum termo</p>}
                 </div>
               ) : (
-                <Tabs defaultValue={editableVocab.length > 0 ? (editableVocab[0].word || "vocab-0") : undefined}>
-                  <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
+                editableVocab.length > 0 ? (
+                  <Tabs defaultValue={editableVocab[0]?.word}>
+                    <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted p-1">
+                      {editableVocab.map((v: any) => <TabsTrigger key={v.word} value={v.word} className="text-xs px-2 py-1.5">{v.word}</TabsTrigger>)}
+                    </TabsList>
                     {editableVocab.map((v: any) => (
-                      <TabsTrigger key={v.word} value={v.word} className="text-xs px-2 py-1.5">
-                        {v.word}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {editableVocab.map((v: any) => (
-                    <TabsContent key={v.word} value={v.word} className="mt-3">
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-foreground">{v.word}</h4>
-                        <p className="text-sm text-muted-foreground">{v.definition}</p>
-                        <div className="bg-muted/50 p-3 rounded-lg">
-                          <p className="text-sm italic text-foreground">{`"${v.example}"`}</p>
+                      <TabsContent key={v.word} value={v.word} className="mt-3">
+                        <div className="space-y-2">
+                          <h4 className="font-semibold text-foreground">{v.word}</h4>
+                          <p className="text-sm text-muted-foreground">{v.definition}</p>
+                          <div className="bg-muted/50 p-3 rounded-lg"><p className="text-sm italic">{`"${v.example}"`}</p></div>
                         </div>
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                ) : (
+                  <p className="text-center text-xs text-muted-foreground py-4 italic">Nenhum vocabulário desta aula</p>
+                )
               )}
             </CardContent>
           </Card>
 
-          {/* Up Next (Hidden in Edit) */}
-          {!isEditable && (
+          {/* Next lesson (dynamic from DB) */}
+          {!isEditable && nextLesson && (
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold font-display text-foreground">A Seguir</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                {relatedLessons.map((lesson) => (
-                  <Link key={lesson.id} href={`/student/lesson/${lesson.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className={cn("flex items-center justify-center w-8 h-8 rounded-lg shrink-0", lesson.completed ? "bg-success/10 text-success" : "bg-primary/10 text-primary")}>
-                      {lesson.completed ? <CheckCircle2 className="w-4 h-4" /> : <Play className="w-3.5 h-3.5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{lesson.title}</p>
-                      <p className="text-xs text-muted-foreground">{lesson.duration}</p>
-                    </div>
-                  </Link>
-                ))}
+              <CardHeader className="pb-2"><CardTitle className="text-base font-semibold font-display">A Seguir</CardTitle></CardHeader>
+              <CardContent>
+                <Link href={`/student/lesson/${nextLesson.id}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
+                    {lessonTypeIcon(nextLesson.lessonType)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{nextLesson.title}</p>
+                    <p className="text-xs text-muted-foreground">{lessonTypeLabel(nextLesson.lessonType)} {nextLesson.duration ? `· ${Math.floor(nextLesson.duration / 60)}m` : ""}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </Link>
               </CardContent>
             </Card>
           )}
 
-          {/* Completion Banner (Hidden in Edit) */}
+          {/* Completion */}
           {!isEditable && (
-            <Card className="border-primary/20 bg-primary/[0.03]">
+            <Card className={cn("border-primary/20 bg-primary/[0.03]", completed && "border-success/20 bg-success/5")}>
               <CardContent className="p-5 text-center">
-                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary mx-auto mb-3">
+                <div className={cn("flex items-center justify-center w-12 h-12 rounded-full mx-auto mb-3", completed ? "bg-success/10 text-success" : "bg-primary/10 text-primary")}>
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <p className="text-sm font-semibold text-foreground mb-1">
-                  {completed ? "Aula Concluída" : "Marcar como Concluída"}
-                </p>
-                <p className="text-xs text-muted-foreground mb-3">Ganhe 25 XP ao finalizar esta aula</p>
-                <Button
-                  size="sm"
-                  className="w-full"
-                  onClick={handleComplete}
-                  disabled={completed}
-                  variant={completed ? "secondary" : "default"}
-                >
-                  {completed ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                      Concluída
-                    </>
-                  ) : "Concluir Aula"}
+                <p className="text-sm font-semibold text-foreground mb-1">{completed ? "Aula Concluída" : "Marcar como Concluída"}</p>
+                <p className="text-xs text-muted-foreground mb-3">Ganhe 25 XP ao finalizar</p>
+                <Button size="sm" className="w-full" onClick={handleComplete} disabled={completed} variant={completed ? "secondary" : "default"}>
+                  {completed ? <><CheckCircle2 className="w-4 h-4 mr-2" />Concluída</> : "Concluir Aula"}
                 </Button>
               </CardContent>
             </Card>

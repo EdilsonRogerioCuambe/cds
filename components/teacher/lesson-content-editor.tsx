@@ -57,7 +57,13 @@ export function LessonContentEditor({
     videoUrl: initialVideoUrl,
     notes: initialContent || "",
     vocabulary: initialVocabulary || [],
-    metadata: initialMetadata
+    metadata: initialMetadata,
+    lessonType: "VIDEO" as const,
+    scheduledAt: null,
+    meetingUrl: null,
+    meetingPlatform: null,
+    challengeConfig: null,
+    quizzes: [],
   }
 
   return (

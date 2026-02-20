@@ -165,6 +165,13 @@ model Module {
   lessons Lesson[]
 }
 
+enum LessonType {
+  VIDEO
+  NOTES
+  CHALLENGE
+  LIVE
+}
+
 model Lesson {
   id         String  @id @default(auto()) @map("_id") @db.ObjectId
   title      String
@@ -174,6 +181,17 @@ model Lesson {
   duration   Int? // in seconds
   order      Int
   vocabulary Json?
+
+  // Lesson type — determines the student experience
+  lessonType LessonType @default(VIDEO)
+
+  // LIVE lesson fields
+  scheduledAt     DateTime?
+  meetingUrl      String? // Zoom, Google Meet, Teams link
+  meetingPlatform String? // "zoom" | "meet" | "teams"
+
+  // CHALLENGE lesson fields
+  challengeConfig Json? // { timeLimit: number, passingScore: number, xpReward: number }
 
   moduleId String @db.ObjectId
   module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)

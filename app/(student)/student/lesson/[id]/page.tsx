@@ -1,9 +1,8 @@
 import { VideoLesson } from "@/components/video-lesson"
+import { getNextLesson } from "@/lib/actions/student"
 import { getCurrentUser } from "@/lib/auth"
 import prisma from "@/lib/prisma"
-import { redirect } from "next/navigation"
-
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 
 export default async function LessonPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,37 +16,51 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
         include: {
           course: true
         }
+      },
+      quizzes: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          type: true,
+          points: true,
+          questions: true,
+        }
       }
     }
   })
 
-  // Security check: ensure lesson is published or user is teacher/admin
   if (!lesson) notFound()
   if (!lesson.published && lesson.module.course.teacherId !== user.id && user.role !== "ADMIN") {
-      notFound()
+    notFound()
   }
 
-  // Fetch user progress for this specific lesson
   const progress = await prisma.progress.findUnique({
-    where: {
-      userId_lessonId: {
-        userId: user.id,
-        lessonId: lesson.id
-      }
-    }
+    where: { userId_lessonId: { userId: user.id, lessonId: lesson.id } }
   })
 
-  // Format lesson for the component
+  const nextLesson = await getNextLesson(lesson.id)
+
   const formattedLesson = {
     id: lesson.id,
     title: lesson.title,
     module: lesson.module.title,
     level: lesson.module.course.level,
-    duration: lesson.duration ? `${Math.floor(lesson.duration / 60)}:${(lesson.duration % 60).toString().padStart(2, '0')}` : "0:00",
+    duration: lesson.duration
+      ? `${Math.floor(lesson.duration / 60)}:${(lesson.duration % 60).toString().padStart(2, '0')}`
+      : "0:00",
     notes: lesson.content || "",
     vocabulary: (lesson.vocabulary as any) || [],
     videoUrl: lesson.videoUrl || undefined,
-    metadata: (lesson.metadata as any) || undefined
+    metadata: (lesson.metadata as any) || undefined,
+    lessonType: lesson.lessonType,
+    // LIVE lesson
+    scheduledAt: lesson.scheduledAt?.toISOString() || null,
+    meetingUrl: lesson.meetingUrl || null,
+    meetingPlatform: lesson.meetingPlatform || null,
+    // CHALLENGE lesson
+    challengeConfig: (lesson.challengeConfig as any) || null,
+    quizzes: lesson.quizzes,
   }
 
   return (
@@ -55,6 +68,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
       currentLesson={formattedLesson}
       initialPosition={progress?.lastPosition || 0}
       isCompleted={progress?.completed || false}
+      nextLesson={nextLesson}
     />
   )
 }
