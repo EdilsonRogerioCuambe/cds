@@ -74,6 +74,8 @@ model User {
   studyLogs        StudyLog[]
   userAchievements UserAchievement[]
   activityLogs     ActivityLog[]
+  forumPosts       ForumPost[]       @relation("UserForumPosts")
+  forumReplies     ForumReply[]      @relation("UserForumReplies")
 }
 
 model StudyLog {
@@ -341,4 +343,28 @@ model ActivityLog {
   xpEarned  Int          @default(0)
   metadata  Json?
   createdAt DateTime     @default(now())
+}
+
+model ForumPost {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  content   String
+  category  String       @default("General")
+  upvotes   Int          @default(0)
+  upvotedBy String[]     @db.ObjectId
+  authorId  String       @db.ObjectId
+  author    User         @relation("UserForumPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  replies   ForumReply[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model ForumReply {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  content   String
+  authorId  String    @db.ObjectId
+  author    User      @relation("UserForumReplies", fields: [authorId], references: [id], onDelete: Cascade)
+  postId    String    @db.ObjectId
+  post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
 }

@@ -314,30 +314,80 @@ export async function getStudentStats(): Promise<StudentStats | null> {
 }
 
 export async function getForumPosts(): Promise<ForumPost[]> {
-  // In the future, fetch from a Forum model. For now, returning formatted mock for UI consistency.
-  return [
-    {
-      id: "f1",
-      title: "Tips for remembering irregular verbs?",
-      content: "I keep mixing up past participles of irregular verbs. Does anyone have effective memorization techniques?",
-      author: { name: "Maria S.", avatar: "MS", isTeacher: false },
-      category: "Grammar Help",
-      replies: 12,
-      upvotes: 34,
-      createdAt: "2 hours ago",
-    },
-    {
-      id: "f2",
-      title: "Weekly Speaking Practice Group - Wednesdays 7PM",
-      content: "Starting a weekly speaking practice session on Zoom. All levels welcome!",
-      author: { name: "Prof. James", avatar: "PJ", isTeacher: true },
-      category: "Study Groups",
-      replies: 28,
-      upvotes: 67,
-      createdAt: "5 hours ago",
+  const posts = await prisma.forumPost.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    include: {
+      author: { select: { id: true, name: true, role: true, image: true } },
+      replies: { select: { id: true } }
     }
-  ]
+  })
+
+  return posts.map((post) => {
+    const authorName = post.author.name ?? "Usuário"
+    const initials = authorName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+
+    const timeAgo = formatTimeAgo(post.createdAt)
+
+    return {
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      author: {
+        name: authorName,
+        avatar: initials,
+        isTeacher: post.author.role === "TEACHER",
+      },
+      name: authorName,
+      avatar: initials,
+      isTeacher: post.author.role === "TEACHER",
+      category: post.category,
+      replies: post.replies.length,
+      upvotes: post.upvotes,
+      createdAt: timeAgo,
+    }
+  })
 }
+
+export async function getLeaderboard(limit = 10) {
+  const users = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    orderBy: { xp: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      xp: true,
+      currentLevel: true,
+      streak: true,
+      _count: {
+        select: {
+          progress: { where: { completed: true } },
+          userAchievements: true,
+        }
+      }
+    }
+  })
+
+  return users.map((user, index) => ({
+    rank: index + 1,
+    id: user.id,
+    name: user.name ?? "Aluno",
+    image: user.image,
+    xp: user.xp,
+    currentLevel: user.currentLevel ?? "A1",
+    streak: user.streak,
+    lessonsCompleted: user._count.progress,
+    achievements: user._count.userAchievements,
+  }))
+}
+
 
 export async function getBadges(): Promise<Badge[]> {
   const user = await getCurrentUser()

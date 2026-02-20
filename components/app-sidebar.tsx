@@ -10,6 +10,7 @@ import {
     Play,
     Settings,
     TrendingUp,
+    Trophy,
     User,
     Users
 } from "lucide-react"
@@ -33,6 +34,7 @@ const studentNav: NavItem[] = [
   { label: "Lições", href: "/student/lesson", icon: Play },
   { label: "Quizzes", href: "/student/quiz", icon: ClipboardCheck },
   { label: "Fórum", href: "/student/forum", icon: MessageSquare },
+  { label: "Ranking", href: "/student/leaderboard", icon: Trophy },
   { label: "Perfil", href: "/student/profile", icon: User },
 ]
 

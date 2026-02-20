@@ -362,3 +362,93 @@ export async function issueModuleCertificate(moduleId: string) {
 
   return verificationCode
 }
+
+// --- PROFILE ACTIONS ---
+
+export async function updateProfile(data: { name?: string }) {
+  "use server"
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Não autorizado")
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { name: data.name }
+  })
+
+  revalidatePath("/student/profile")
+  revalidatePath("/student/dashboard")
+}
+
+// --- FORUM ACTIONS ---
+
+export async function createForumPost(data: { title: string; content: string; category: string }) {
+  "use server"
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Não autorizado")
+
+  if (!data.title.trim() || !data.content.trim()) {
+    throw new Error("Título e conteudo são obrigatórios")
+  }
+
+  const post = await prisma.forumPost.create({
+    data: {
+      title: data.title.trim(),
+      content: data.content.trim(),
+      category: data.category,
+      authorId: user.id,
+    }
+  })
+
+  await prisma.activityLog.create({
+    data: {
+      userId: user.id,
+      type: "FORUM_POST",
+      title: `Publicou: ${data.title.trim()}`,
+      xpEarned: 10,
+    }
+  })
+
+  revalidatePath("/student/forum")
+  return post
+}
+
+export async function upvoteForumPost(postId: string) {
+  "use server"
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Não autorizado")
+
+  const post = await prisma.forumPost.findUnique({ where: { id: postId } })
+  if (!post) throw new Error("Post não encontrado")
+
+  const alreadyUpvoted = post.upvotedBy.includes(user.id)
+
+  await prisma.forumPost.update({
+    where: { id: postId },
+    data: {
+      upvotes: alreadyUpvoted ? post.upvotes - 1 : post.upvotes + 1,
+      upvotedBy: alreadyUpvoted
+        ? { set: post.upvotedBy.filter((id) => id !== user.id) }
+        : { push: user.id }
+    }
+  })
+
+  revalidatePath("/student/forum")
+}
+
+export async function replyToForumPost(postId: string, content: string) {
+  "use server"
+  const user = await getCurrentUser()
+  if (!user) throw new Error("Não autorizado")
+
+  if (!content.trim()) throw new Error("Resposta não pode estar vazia")
+
+  await prisma.forumReply.create({
+    data: {
+      content: content.trim(),
+      authorId: user.id,
+      postId,
+    }
+  })
+
+  revalidatePath("/student/forum")
+}
