@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth-server"
 import { UserRole } from "@/types/user"
+import { isValidPhoneNumber } from "libphonenumber-js"
 import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { z } from "zod"
@@ -16,6 +17,13 @@ const registerSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("E-mail inválido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
+  phone: z.string().refine((val) => {
+    try {
+      return isValidPhoneNumber(val)
+    } catch {
+      return false
+    }
+  }, "Número de telefone inválido. Use o formato internacional (ex: +25884...)"),
   role: z.nativeEnum(UserRole).default(UserRole.STUDENT),
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: "Você deve aceitar os termos e condições" }),
@@ -94,7 +102,7 @@ export async function signUpAction(prevState: any, formData: FormData) {
     }
   }
 
-  const { name, email, password, role } = validatedFields.data
+  const { name, email, password, role, phone } = validatedFields.data
 
   try {
     console.log("[SignUpAction] Chamando auth.api.signUpEmail...");
@@ -104,6 +112,7 @@ export async function signUpAction(prevState: any, formData: FormData) {
         password,
         name,
         role,
+        phone,
         termsAccepted: true,
         termsAcceptedAt: new Date().toISOString(),
       },

@@ -87,6 +87,24 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="phone">Número de Celular</Label>
+          <Input
+            id="phone"
+            name="phone"
+            placeholder="+258 84 123 4567"
+            type="tel"
+            required
+            disabled={isPending}
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Use o formato internacional com o código do país (ex: +258 para Moçambique).
+          </p>
+          {getFieldError("phone") && (
+            <p className="text-xs text-red-500">{getFieldError("phone")}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="role">Eu sou um...</Label>
           <Select name="role" defaultValue={UserRole.STUDENT}>
             <SelectTrigger id="role" className="h-12 rounded-xl">
