@@ -172,10 +172,10 @@ export async function getCourses(teacherId?: string): Promise<Course[]> {
           return [mainLesson]
         }),
       completedLessons: 0,
-      estimatedMinutes: mod.lessons.reduce((acc, l) => acc + (l.duration || 0), 0) / 60
+      estimatedMinutes: Math.round(mod.lessons.reduce((acc, l) => acc + (l.duration || 0), 0) / 60)
     })),
     totalLessons: course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
-    estimatedHours: course.modules.reduce((acc, mod) => acc + mod.lessons.reduce((lAcc, l) => lAcc + (l.duration || 0), 0), 0) / 3600,
+    estimatedHours: Math.round(course.modules.reduce((acc, mod) => acc + mod.lessons.reduce((lAcc, l) => lAcc + (l.duration || 0), 0), 0) / 3600),
     enrolled: course._count.enrollments,
     locked: false,
     isEnrolled: (course as any).enrollments?.length > 0,

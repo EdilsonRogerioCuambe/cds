@@ -66,7 +66,7 @@ export async function updateCourse(id: string, data: {
   return course
 }
 
-export async function addModule(courseId: string, data: { title: string; order: number; published?: boolean }) {
+export async function addModule(courseId: string, data: { title: string; description?: string; order: number; published?: boolean }) {
   const module = await prisma.module.create({
     data: {
       ...data,
@@ -77,7 +77,7 @@ export async function addModule(courseId: string, data: { title: string; order: 
   return module
 }
 
-export async function updateModule(id: string, data: { title?: string; published?: boolean }) {
+export async function updateModule(id: string, data: { title?: string; description?: string; published?: boolean }) {
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
 
@@ -112,6 +112,7 @@ export async function addLesson(moduleId: string, data: {
   order: number
   lessonType?: string
   content?: string
+  videoId?: string
   videoUrl?: string
   duration?: number
   published?: boolean
@@ -127,6 +128,7 @@ export async function addLesson(moduleId: string, data: {
       lessonType: (data.lessonType as any) || "VIDEO",
       content: data.content,
       videoUrl: data.videoUrl,
+      videoId: data.videoId,
       duration: data.duration,
       published: data.published || false,
       scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : undefined,
@@ -258,6 +260,7 @@ export async function updateLessonVideo(lessonId: string, videoUrl: string, dura
 export async function updateLesson(lessonId: string, data: {
   title?: string
   content?: string
+  videoId?: string
   videoUrl?: string
   duration?: number
   vocabulary?: any
@@ -266,6 +269,7 @@ export async function updateLesson(lessonId: string, data: {
   scheduledAt?: string | null
   meetingUrl?: string | null
   meetingPlatform?: string | null
+  lessonType?: string
 }) {
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
@@ -273,6 +277,7 @@ export async function updateLesson(lessonId: string, data: {
   const updateData: any = {
     ...data,
     duration: data.duration ? Math.round(data.duration) : undefined,
+    lessonType: data.lessonType ? (data.lessonType as any) : undefined,
   }
 
   // Handle nullable date

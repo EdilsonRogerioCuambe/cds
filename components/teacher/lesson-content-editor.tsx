@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { deleteLesson, updateLesson } from "@/lib/actions/teacher"
 import {
@@ -30,6 +31,8 @@ import {
     Loader2,
     Play,
     Plus,
+    Save,
+    Settings,
     Trash2,
     Zap,
 } from "lucide-react"
@@ -54,6 +57,8 @@ interface LessonContentEditorProps {
   level: string
   courseId: string
   initialMetadata?: any
+  initialPublished?: boolean
+  initialVideoId?: string | null
 }
 
 // ── Utility: reading time from plain text ──────────────────────────────────────
@@ -650,7 +655,6 @@ function ChallengeEditor({ lessonId, initialChallengeConfig }: {
     </div>
   )
 }
-
 // ── Router ────────────────────────────────────────────────────────────────────
 export function LessonContentEditor({
   lessonId,
@@ -662,13 +666,38 @@ export function LessonContentEditor({
   initialMeetingUrl,
   initialMeetingPlatform,
   initialChallengeConfig,
-  title,
+  title: initialTitle,
   module,
   level,
   courseId,
   initialMetadata,
+  initialPublished,
+  initialVideoId,
 }: LessonContentEditorProps) {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [type, setType] = useState(lessonType)
+  const [title, setTitle] = useState(initialTitle)
+  const [published, setPublished] = useState(initialPublished || false)
+  const [videoId, setVideoId] = useState(initialVideoId || "")
+
+  const handleUpdateGeneral = async () => {
+    setLoading(true)
+    try {
+      await updateLesson(lessonId, {
+        title,
+        lessonType: type,
+        published,
+        videoId: videoId || undefined,
+      })
+      toast.success("Configurações gerais salvas")
+      router.refresh()
+    } catch {
+      toast.error("Erro ao salvar configurações gerais")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -682,10 +711,56 @@ export function LessonContentEditor({
           <DeleteLessonButton lessonId={lessonId} courseId={courseId} />
         </div>
       </div>
-
       <div className="grid grid-cols-1 gap-6">
+        {/* General Settings */}
+        <Card className="border-primary/20 overflow-hidden">
+          <CardHeader className="bg-primary/5 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                <CardTitle className="text-lg">Configurações Gerais</CardTitle>
+              </div>
+              <Button size="sm" onClick={handleUpdateGeneral} disabled={loading}>
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvar Alterações
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <Label>Título da Aula</Label>
+              <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Título da aula" />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Aula</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="VIDEO">Vídeo</SelectItem>
+                  <SelectItem value="NOTES">Notas</SelectItem>
+                  <SelectItem value="LIVE">Aula ao Vivo</SelectItem>
+                  <SelectItem value="CHALLENGE">Desafio</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>ID do Vídeo (YT/Vimeo)</Label>
+              <Input value={videoId} onChange={e => setVideoId(e.target.value)} placeholder="Ex: dQw4w9WgXcQ" />
+            </div>
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+              <div className="space-y-0.5">
+                <Label>Status</Label>
+                <p className="text-[10px] text-muted-foreground">{published ? "Publicado" : "Rascunho"}</p>
+              </div>
+              <Switch checked={published} onCheckedChange={setPublished} />
+            </div>
+          </CardContent>
+        </Card>
+
         {(() => {
-          switch (lessonType) {
+          switch (type) {
             case "NOTES":
               return <NotesEditor lessonId={lessonId} initialContent={initialContent} initialVocabulary={initialVocabulary} />
 

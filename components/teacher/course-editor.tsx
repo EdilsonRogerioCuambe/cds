@@ -92,6 +92,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
   // Modal State
   const [moduleModalOpen, setModuleModalOpen] = useState(false)
   const [newModuleTitle, setNewModuleTitle] = useState("")
+  const [newModuleDescription, setNewModuleDescription] = useState("")
 
   const [lessonModalOpen, setLessonModalOpen] = useState(false)
   const [newLessonTitle, setNewLessonTitle] = useState("")
@@ -266,6 +267,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
     try {
       const newModule = await addModule(course.id, {
         title: newModuleTitle,
+        description: newModuleDescription,
         order: course.modules.length + 1
       })
       setCourse((prev: any) => ({
@@ -273,6 +275,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
         modules: [...prev.modules, { ...newModule, lessons: [] }]
       }))
       setNewModuleTitle("")
+      setNewModuleDescription("")
       setModuleModalOpen(false)
       toast.success("Módulo adicionado")
     } catch (error) {
@@ -904,6 +907,15 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                 value={newModuleTitle}
                 onChange={(e) => setNewModuleTitle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddModule()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição do Módulo (opcional)</Label>
+              <Textarea
+                placeholder="Ex: Neste módulo vamos aprender..."
+                value={newModuleDescription}
+                onChange={(e) => setNewModuleDescription(e.target.value)}
+                rows={3}
               />
             </div>
           </div>

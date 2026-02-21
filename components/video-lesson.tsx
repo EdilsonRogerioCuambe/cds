@@ -8,10 +8,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
@@ -21,29 +21,29 @@ import { Textarea } from "@/components/ui/textarea"
 import { completeLesson, saveQuizAttempt, syncLessonProgress } from "@/lib/actions/student"
 import { cn } from "@/lib/utils"
 import {
-    BookOpen,
-    Check,
-    CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    ChevronUp,
-    Clock,
-    ExternalLink,
-    FileText,
-    Maximize,
-    Minimize,
-    Monitor,
-    Pause,
-    Play,
-    Plus,
-    Settings,
-    SkipForward,
-    Trash2,
-    Trophy,
-    Video,
-    Volume2,
-    VolumeX,
-    Zap
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  ExternalLink,
+  FileText,
+  Maximize,
+  Minimize,
+  Monitor,
+  Pause,
+  Play,
+  Plus,
+  Settings,
+  SkipForward,
+  Trash2,
+  Trophy,
+  Video,
+  Volume2,
+  VolumeX,
+  Zap
 } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
@@ -141,7 +141,7 @@ function NotesLesson({
               <FileText className="w-3 h-3" /> Notas de Aula
             </Badge>
             {words > 0 && (
-              <Badge variant="outline" className="gap-1 text-xs text-blue-400 border-blue-500/30 bg-blue-500/10">
+              <Badge variant="outline" className="gap-1 text-xs text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 bg-transparent">
                 <Clock className="w-3 h-3" /> {minutes} min de leitura
               </Badge>
             )}
@@ -171,7 +171,7 @@ function NotesLesson({
         </CardHeader>
         <CardContent className="pt-6">
           {currentLesson.notes ? (
-            <div className="prose prose-invert max-w-none">
+            <div className="prose dark:prose-invert max-w-none">
               <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]}>
                 {currentLesson.notes}
               </ReactMarkdown>
@@ -306,7 +306,7 @@ function LiveLesson({
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><FileText className="w-4 h-4 text-primary" /> Materiais de Apoio</CardTitle></CardHeader>
           <CardContent className="pt-4">
-            <div className="prose prose-invert max-w-none text-sm">
+            <div className="prose dark:prose-invert max-w-none text-sm">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{currentLesson.notes}</ReactMarkdown>
             </div>
           </CardContent>
@@ -579,22 +579,23 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
     h1: ({ ...props }) => <h1 className="text-2xl font-bold text-foreground mt-8 mb-4 border-l-4 border-primary pl-4 font-display" {...props} />,
     h2: ({ ...props }) => <h2 className="text-xl font-bold text-foreground mt-6 mb-3 border-l-2 border-primary/50 pl-3 font-display" {...props} />,
     h3: ({ ...props }) => <h3 className="text-lg font-semibold text-primary mt-6 mb-2" {...props} />,
-    p: ({ ...props }) => <p className="text-foreground/70 leading-relaxed mb-4 text-[15px]" {...props} />,
+    p: ({ ...props }) => <p className="text-foreground leading-relaxed mb-4 text-[15px]" {...props} />,
     ul: ({ ...props }) => <ul className="list-none space-y-2 mb-6" {...props} />,
     li: ({ ...props }) => (
-      <li className="flex items-start gap-3 text-foreground/70 text-[14px]">
+      <li className="flex items-start gap-3 text-foreground text-[14px]">
         <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
         <span {...props} />
       </li>
     ),
     strong: ({ ...props }) => <strong className="text-foreground font-bold border-b border-primary/30" {...props} />,
-    blockquote: ({ ...props }) => <blockquote className="border-l-4 border-muted bg-muted/20 px-6 py-4 rounded-r-xl italic my-6 text-foreground/60" {...props} />,
-    code: ({ ...props }) => <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded font-mono text-xs" {...props} />,
-    table: ({ ...props }) => <div className="my-8 overflow-x-auto rounded-xl border border-white/5 bg-black/20"><table className="w-full border-collapse text-left" {...props} /></div>,
-    thead: ({ ...props }) => <thead className="bg-primary/5 uppercase tracking-wider font-mono text-[10px] text-primary" {...props} />,
-    th: ({ ...props }) => <th className="px-6 py-4 font-bold border-b border-white/10" {...props} />,
-    td: ({ ...props }) => <td className="px-6 py-4 text-foreground/70 border-b border-white/5 text-[13px]" {...props} />,
-    tr: ({ ...props }) => <tr className="hover:bg-white/5 transition-colors" {...props} />,
+    blockquote: ({ ...props }) => <blockquote className="border-l-4 border-primary px-6 py-4 italic my-6 text-foreground font-medium" {...props} />,
+    code: ({ ...props }) => <code className="text-primary dark:text-[#10D79E] font-bold px-1 rounded font-mono text-xs border border-border/30" {...props} />,
+    a: ({ ...props }) => <a className="text-primary dark:text-[#10D79E] font-bold underline decoration-primary/30 hover:decoration-primary transition-all" {...props} />,
+    table: ({ ...props }) => <div className="my-8 overflow-x-auto border-t border-border"><table className="w-full border-collapse text-left" {...props} /></div>,
+    thead: ({ ...props }) => <thead className="border-b-2 border-border/50 uppercase tracking-wider font-mono text-[10px] text-primary dark:text-[#10D79E]" {...props} />,
+    th: ({ ...props }) => <th className="px-6 py-4 font-bold border-b border-border text-foreground" {...props} />,
+    td: ({ ...props }) => <td className="px-6 py-4 text-foreground border-b border-border/50 text-[13px]" {...props} />,
+    tr: ({ ...props }) => <tr className="transition-colors" {...props} />,
   }
 
   const handleComplete = async () => {
@@ -746,16 +747,16 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
                   />
                   {/* HUD Top Left */}
                   <div className={cn("absolute top-4 left-4 flex flex-col gap-1 transition-all duration-500", showControls ? "opacity-100" : "opacity-0")}>
-                    <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      <span className="font-mono text-[10px] text-primary uppercase tracking-[0.2em]">Live Session</span>
+                    <div className="bg-black/60 backdrop-blur-xl border border-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#10D79E] animate-pulse" />
+                      <span className="font-mono text-[10px] text-[#10D79E] font-bold uppercase tracking-[0.2em]">Live Session</span>
                     </div>
                     <h3 className="text-white font-display font-bold text-lg drop-shadow-lg truncate max-w-xs">{currentLesson.title}</h3>
                   </div>
                   {/* Center Play */}
                   {!isPlaying && (
-                    <button type="button" onClick={e => { e.stopPropagation(); togglePlay() }} className="absolute inset-0 z-40 flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors">
-                      <div className="w-20 h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)]">
+                    <button type="button" onClick={e => { e.stopPropagation(); togglePlay() }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-40 flex items-center justify-center group/play">
+                      <div className="w-20 h-20 rounded-full bg-primary/90 text-primary-foreground flex items-center justify-center shadow-[0_0_50px_rgba(19,146,80,0.5)] group-hover/play:scale-110 transition-transform duration-300">
                         <Play className="w-10 h-10 ml-1.5 fill-current" />
                       </div>
                     </button>
@@ -778,12 +779,12 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
                             <Slider value={[isMuted ? 0 : volume * 100]} max={100} onValueChange={handleVolumeChange} className="w-20 cursor-pointer" />
                           </div>
                         </div>
-                        <span className="text-white/80 font-mono text-xs"><span className="text-primary font-bold">{formatT(currentTime)}</span> / {formatT(duration)}</span>
+                        <span className="text-white font-mono text-xs"><span className="text-primary font-bold">{formatT(currentTime)}</span> / {formatT(duration)}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <DropdownMenu modal={false}>
                           <DropdownMenuTrigger asChild>
-                            <button className="text-white/80 hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10">
+                            <button className="text-white hover:text-white flex items-center gap-1.5 font-mono text-[10px] tracking-widest uppercase py-1 px-2.5 bg-white/10 rounded-lg border border-white/20 hover:bg-white/20">
                               <Settings className="w-3.5 h-3.5" /> {playbackRate}x
                             </button>
                           </DropdownMenuTrigger>
@@ -793,10 +794,10 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
-                        <button onClick={toggleTheaterMode} className={cn("hidden md:flex text-white/80 hover:text-white p-1.5 rounded-lg transition-colors", isTheaterMode && "text-primary bg-primary/10")}>
+                        <button onClick={toggleTheaterMode} className={cn("hidden md:flex text-white hover:text-white p-1.5 rounded-lg transition-colors", isTheaterMode && "text-primary bg-primary/10")}>
                           {isTheaterMode ? <Minimize className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
                         </button>
-                        <button onClick={toggleFullscreen} className="text-white/80 hover:text-white p-1">
+                        <button onClick={toggleFullscreen} className="text-white hover:text-white p-1">
                           {isFullscreen ? <Minimize className="w-5 h-5 text-primary" /> : <Maximize className="w-5 h-5" />}
                         </button>
                       </div>
@@ -846,7 +847,7 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
               {isEditable ? (
                 <Textarea value={editableContent} onChange={e => setEditableContent(e.target.value)} placeholder="Conteúdo da aula em Markdown..." rows={10} className="font-mono text-sm" />
               ) : notesExpanded && (
-                <div className="prose prose-invert max-w-none">
+                <div className="prose dark:prose-invert max-w-none">
                   <ReactMarkdown components={markdownComponents as any} remarkPlugins={[remarkGfm]}>{editableContent}</ReactMarkdown>
                 </div>
               )}

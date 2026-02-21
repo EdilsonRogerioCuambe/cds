@@ -24,6 +24,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { addLesson, deleteLesson, deleteModule, reorderLessons, updateLesson, updateModule } from "@/lib/actions/teacher"
 import {
     closestCenter,
@@ -204,6 +205,15 @@ export function ModuleEditor({ initialData }: ModuleEditorProps) {
                 onChange={(e) => setModule({ ...module, title: e.target.value })}
               />
             </div>
+            <div className="space-y-2">
+              <Label>Descrição do Módulo</Label>
+              <Textarea
+                value={module.description || ""}
+                onChange={(e) => setModule({ ...module, description: e.target.value })}
+                placeholder="Ex: Neste módulo vamos aprender..."
+                rows={4}
+              />
+            </div>
             <div className="space-y-4 pt-2">
               <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
                 <div className="space-y-0.5">
@@ -218,7 +228,7 @@ export function ModuleEditor({ initialData }: ModuleEditorProps) {
               </div>
 
               <div className="flex flex-col gap-2 pt-2">
-                <Button onClick={() => handleUpdateModule({ title: module.title })} disabled={loading} className="w-full">
+                <Button onClick={() => handleUpdateModule({ title: module.title, description: module.description })} disabled={loading} className="w-full">
                   <Save className="w-4 h-4 mr-2" />
                   Salvar Alterações
                 </Button>

@@ -1,26 +1,30 @@
 "use client"
 
+import { signOutAction } from "@/app/actions/auth"
 import { Button } from "@/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from "@/components/ui/sheet"
+import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
 import {
-  BookOpen,
-  ClipboardCheck,
-  FolderOpen,
-  LayoutDashboard,
-  Menu,
-  MessageSquare,
-  Play,
-  Settings,
-  TrendingUp,
-  User,
-  Users
+    BookOpen,
+    ClipboardCheck,
+    FolderOpen,
+    LayoutDashboard,
+    LogOut,
+    Menu,
+    MessageSquare,
+    Play,
+    Settings,
+    TrendingUp,
+    Trophy,
+    User,
+    Users
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -42,7 +46,9 @@ const studentNavItems: NavItem[] = [
   { label: "Lições", href: "/student/lesson", icon: Play },
   { label: "Quizzes", href: "/student/quiz", icon: ClipboardCheck },
   { label: "Fórum", href: "/student/forum", icon: MessageSquare },
+  { label: "Ranking", href: "/student/leaderboard", icon: Trophy },
   { label: "Perfil", href: "/student/profile", icon: User },
+  { label: "Configurações", href: "/student/settings", icon: Settings },
 ]
 
 const teacherNavItems: NavItem[] = [
@@ -58,6 +64,7 @@ const adminNavItems: NavItem[] = [
   { label: "Usuários", href: "/admin/users", icon: Users },
   { label: "Cursos", href: "/admin/courses", icon: BookOpen },
   { label: "Conteúdo", href: "/admin/content", icon: FolderOpen },
+  { label: "Fórum", href: "/admin/forum", icon: MessageSquare },
   { label: "Analytics", href: "/admin/analytics", icon: TrendingUp },
   { label: "Configurações", href: "/admin/settings", icon: Settings },
 ]
@@ -65,6 +72,12 @@ const adminNavItems: NavItem[] = [
 export function MobileNav({ variant = "student" }: MobileNavProps) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const { data: session } = authClient.useSession()
+  const user = session?.user
+
+  const initials = user?.name
+    ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+    : "U"
 
   const navItems = variant === "admin"
     ? adminNavItems
@@ -138,6 +151,31 @@ export function MobileNav({ variant = "student" }: MobileNavProps) {
               )
             })}
           </nav>
+
+          <div className="mt-auto pt-8 border-t border-white/5 space-y-4">
+            <div className="flex items-center gap-3 px-2">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 border border-primary/20 text-sm font-bold text-primary">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground truncate">
+                  {user?.name || "Usuário"}
+                </p>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {variant === "admin" ? "Administrador" : variant === "teacher" ? "Professor" : (user as any)?.currentLevel || "Aluno"}
+                </p>
+              </div>
+            </div>
+
+            <Button
+              variant="ghost"
+              onClick={() => signOutAction()}
+              className="w-full justify-start gap-4 px-4 py-3.5 rounded-xl text-sm font-semibold text-red-500 hover:text-red-600 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 transition-all"
+            >
+              <LogOut className="w-5 h-5" />
+              Sair da Conta
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
     </header>
