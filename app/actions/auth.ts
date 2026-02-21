@@ -23,7 +23,7 @@ const registerSchema = z.object({
     } catch {
       return false
     }
-  }, "Número de telefone inválido. Use o formato internacional (ex: +25884...)"),
+  }, "Número de telefone inválido. Use o formato internacional (ex: +258..., +55...)"),
   role: z.nativeEnum(UserRole).default(UserRole.STUDENT),
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: "Você deve aceitar os termos e condições" }),

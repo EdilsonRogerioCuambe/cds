@@ -91,13 +91,13 @@ export default function RegisterPage() {
           <Input
             id="phone"
             name="phone"
-            placeholder="+258 84 123 4567"
+            placeholder="+258 84 123 4567 ou +55 11 91234 5678"
             type="tel"
             required
             disabled={isPending}
           />
           <p className="text-[10px] text-muted-foreground">
-            Use o formato internacional com o código do país (ex: +258 para Moçambique).
+            Use o formato internacional com o código do país (ex: +258 para Moçambique, +55 para Brasil).
           </p>
           {getFieldError("phone") && (
             <p className="text-xs text-red-500">{getFieldError("phone")}</p>

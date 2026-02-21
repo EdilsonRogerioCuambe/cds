@@ -15,6 +15,7 @@ type UserData = {
   id: string
   name?: string | null
   email: string
+  phone?: string | null
   bio?: string | null
   expertise?: string[]
   image?: string | null
@@ -23,6 +24,7 @@ type UserData = {
 export function TeacherSettingsForm({ user }: { user: UserData }) {
   const [isPending, startTransition] = useTransition()
   const nameRef = useRef<HTMLInputElement>(null)
+  const phoneRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(user.name ?? "")
 
   const initials = (user.name ?? user.email)
@@ -32,15 +34,25 @@ export function TeacherSettingsForm({ user }: { user: UserData }) {
     .toUpperCase()
     .slice(0, 2)
 
+  // Format phone as user types
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value
+    if (val && !val.startsWith("+")) {
+      val = "+" + val.replace(/\D/g, "")
+    }
+    e.target.value = val
+  }
+
   const handleSaveProfile = () => {
     const newName = nameRef.current?.value.trim()
+    const newPhone = phoneRef.current?.value.trim()
     if (!newName) {
       toast.error("O nome não pode estar vazio.")
       return
     }
     startTransition(async () => {
       try {
-        await updateProfile({ name: newName })
+        await updateProfile({ name: newName, phone: newPhone })
         setName(newName)
         toast.success("Perfil atualizado com sucesso!")
       } catch {
@@ -111,6 +123,25 @@ export function TeacherSettingsForm({ user }: { user: UserData }) {
             />
             <p className="text-xs text-muted-foreground">
               O email não pode ser alterado aqui.
+            </p>
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <Label htmlFor="phone" className="font-bold">
+              Número de Celular
+            </Label>
+            <Input
+              id="phone"
+              ref={phoneRef}
+              type="tel"
+              defaultValue={user.phone ?? ""}
+              placeholder="+258 84 123 4567"
+              onChange={handlePhoneInput}
+              className="font-mono tracking-wider"
+            />
+            <p className="text-xs text-muted-foreground">
+              Usado para comunicações administrativas. Use o formato internacional (ex: +55...).
             </p>
           </div>
 

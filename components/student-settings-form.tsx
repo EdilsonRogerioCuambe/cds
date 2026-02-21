@@ -19,15 +19,9 @@ type UserData = {
   image?: string | null
 }
 
-// Display phone in a friendly format: +258 84 123 4567
+// Display phone in a friendly format
 function displayPhone(phone: string | null | undefined): string {
   if (!phone) return ""
-  const digits = phone.replace(/\D/g, "")
-  // +258 XX XXX XXXX  (12 digits with 258 prefix)
-  if (digits.startsWith("258") && digits.length === 12) {
-    const local = digits.slice(3) // 9 digits
-    return `+258 ${local.slice(0, 2)} ${local.slice(2, 5)} ${local.slice(5)}`
-  }
   return phone
 }
 
@@ -45,23 +39,13 @@ export function StudentSettingsForm({ user }: { user: UserData }) {
     .toUpperCase()
     .slice(0, 2)
 
-  // Format phone as user types: 84 123 4567
+  // Format phone as user types
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/\D/g, "")
-    // Remove leading 258 or 0 if typed
-    const local = raw.startsWith("258")
-      ? raw.slice(3)
-      : raw.startsWith("0")
-      ? raw.slice(1)
-      : raw
-
-    // Format: XX XXX XXXX (max 9 digits)
-    const limited = local.slice(0, 9)
-    let formatted = limited
-    if (limited.length > 2) formatted = limited.slice(0, 2) + " " + limited.slice(2)
-    if (limited.length > 5) formatted = limited.slice(0, 2) + " " + limited.slice(2, 5) + " " + limited.slice(5)
-
-    e.target.value = formatted
+    let val = e.target.value
+    if (val && !val.startsWith("+")) {
+      val = "+" + val.replace(/\D/g, "")
+    }
+    e.target.value = val
   }
 
   const handleSave = () => {
@@ -154,22 +138,18 @@ export function StudentSettingsForm({ user }: { user: UserData }) {
               </span>
             </Label>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-2 border rounded-lg bg-muted text-sm font-bold text-muted-foreground shrink-0">
-                🇲🇿 +258
-              </div>
               <Input
                 id="phone"
                 ref={phoneRef}
                 type="tel"
-                defaultValue={displayPhone(user.phone).replace("+258 ", "").trim()}
-                placeholder="84 123 4567"
+                defaultValue={user.phone ?? ""}
+                placeholder="+258 84 123 4567"
                 onChange={handlePhoneInput}
-                maxLength={12} // "84 123 4567"
                 className="font-mono tracking-wider"
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Será usado para notificações via WhatsApp no futuro. Salvo como <code>+258XXXXXXXXX</code>.
+              Será usado para notificações via WhatsApp. Use o formato internacional (ex: +55 para Brasil).
             </p>
           </div>
 
