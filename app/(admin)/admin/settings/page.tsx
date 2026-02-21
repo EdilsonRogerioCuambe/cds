@@ -1,3 +1,4 @@
+import { AdminProfileForm } from "@/components/admin/admin-profile-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,9 +12,14 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { getCurrentUser } from "@/lib/auth"
 import { Bell, CreditCard, Globe, Mail, Shield, Zap } from "lucide-react"
+import { redirect } from "next/navigation"
 
-export default function AdminSettingsPage() {
+export default async function AdminSettingsPage() {
+  const user = await getCurrentUser()
+  if (!user) return redirect("/auth/login")
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="mb-8">
@@ -22,6 +28,9 @@ export default function AdminSettingsPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Personal Settings (NEW) */}
+        <AdminProfileForm user={user} />
+
         {/* General Settings */}
         <Card>
           <CardHeader>

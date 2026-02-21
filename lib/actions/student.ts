@@ -370,18 +370,20 @@ export async function updateProfile(data: { name?: string; phone?: string; bio?:
   const user = await getCurrentUser()
   if (!user) throw new Error("Não autorizado")
 
-  // Normalize phone to E.164 (strip non-digits, prepend +258 if local Mozambique number)
+  // Normalize phone to E.164
   let phone = data.phone?.trim() ?? undefined
   if (phone) {
-    const digits = phone.replace(/\D/g, "")
-    if (digits.startsWith("258") && digits.length === 12) {
-      phone = `+${digits}`
-    } else if (digits.length === 9) {
-      phone = `+258${digits}`
-    } else if (digits.startsWith("0") && digits.length === 10) {
-      phone = `+258${digits.slice(1)}`
+    if (!phone.startsWith("+")) {
+       const digits = phone.replace(/\D/g, "")
+       // Default to 258 only if it looks like a local MZ number (9 digits)
+       if (digits.length === 9) {
+         phone = `+258${digits}`
+       } else {
+         phone = `+${digits}`
+       }
     } else {
-      phone = `+${digits}`
+      // Already has +, just strip spaces/dashes
+      phone = phone.replace(/[\s-]/g, "")
     }
   }
 
