@@ -4,11 +4,15 @@ import { NextRequest, NextResponse } from "next/server"
 /**
  * Consulta de progresso e conteúdo por telefone.
  */
+import { normalizePhone } from "@/lib/utils"
+
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
-    const phone = searchParams.get("phone")
+    const phoneParam = searchParams.get("phone")
 
-    if (!phone) return NextResponse.json({ error: "Phone is required" }, { status: 400 })
+    if (!phoneParam) return NextResponse.json({ error: "Phone is required" }, { status: 400 })
+
+    const phone = normalizePhone(phoneParam)
 
     try {
         const user = await prisma.user.findFirst({

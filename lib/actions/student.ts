@@ -5,7 +5,8 @@ import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
 import { checkAndAwardAchievements } from "../achievements"
 import { getCurrentUser } from "../auth"
-import prisma from "../prisma"
+import { normalizePhone } from "../utils"
+import prisma from "@/lib/prisma"
 
 export async function enrollInCourse(courseId: string) {
   const user = await getCurrentUser()
@@ -370,22 +371,8 @@ export async function updateProfile(data: { name?: string; phone?: string; bio?:
   const user = await getCurrentUser()
   if (!user) throw new Error("Não autorizado")
 
-  // Normalize phone to E.164
-  let phone = data.phone?.trim() ?? undefined
-  if (phone) {
-    if (!phone.startsWith("+")) {
-       const digits = phone.replace(/\D/g, "")
-       // Default to 258 only if it looks like a local MZ number (9 digits)
-       if (digits.length === 9) {
-         phone = `+258${digits}`
-       } else {
-         phone = `+${digits}`
-       }
-    } else {
-      // Already has +, just strip spaces/dashes
-      phone = phone.replace(/[\s-]/g, "")
-    }
-  }
+  // Normalize phone using unified utility
+  const phone = data.phone ? normalizePhone(data.phone) : undefined
 
   await prisma.user.update({
     where: { id: user.id },

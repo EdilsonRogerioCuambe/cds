@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma"
+import { normalizePhone } from "@/lib/utils"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
@@ -6,11 +7,13 @@ import { NextRequest, NextResponse } from "next/server"
  */
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
-    const phone = searchParams.get("phone")
+    const phoneParam = searchParams.get("phone")
 
-    if (!phone) {
+    if (!phoneParam) {
         return NextResponse.json({ exists: false, error: "Phone is required" }, { status: 400 })
     }
+
+    const phone = normalizePhone(phoneParam)
 
     try {
         const user = await prisma.user.findFirst({
