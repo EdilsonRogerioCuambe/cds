@@ -2,54 +2,49 @@ import prisma from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
- * Endpoint para verificar existência de usuário via telefone.
- * Query Param: ?phone=+258...
+ * Consulta completa de perfil por telefone.
  */
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const phone = searchParams.get("phone")
 
     if (!phone) {
-        return NextResponse.json({
-            exists: false,
-            error: "Parâmetro 'phone' é obrigatório."
-        }, { status: 400 })
+        return NextResponse.json({ exists: false, error: "Phone is required" }, { status: 400 })
     }
 
     try {
         const user = await prisma.user.findFirst({
             where: { phone: phone },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                role: true,
-                currentLevel: true,
-                points: true,
-                xp: true,
-                streak: true,
-                status: true,
-                whatsappOptIn: true
+            include: {
+                activityLogs: { take: 1, orderBy: { createdAt: "desc" } }
             }
         })
 
-        if (!user) {
-            return NextResponse.json({
-                exists: false,
-                message: "Nenhum usuário encontrado com este telefone."
-            })
-        }
+        if (!user) return NextResponse.json({ exists: false })
 
         return NextResponse.json({
             exists: true,
-            user: user
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                status: user.status,
+                metrics: {
+                    points: user.points,
+                    xp: user.xp,
+                    streak: user.streak,
+                    level: user.currentLevel
+                },
+                lastActive: user.activityLogs[0]?.createdAt || user.updatedAt,
+                terms: {
+                    accepted: user.termsAccepted,
+                    at: user.termsAcceptedAt
+                }
+            }
         })
     } catch (error) {
-        console.error("[Automation API] Erro ao buscar usuário:", error)
-        return NextResponse.json({
-            exists: false,
-            error: "Erro interno ao processar a solicitação."
-        }, { status: 500 })
+        return NextResponse.json({ exists: false, error: "Database error" }, { status: 500 })
     }
 }
