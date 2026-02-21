@@ -27,12 +27,30 @@ export async function GET(
                                 id: true,
                                 title: true,
                                 level: true,
+                                modules: {
+                                    orderBy: { order: "asc" },
+                                    include: {
+                                        lessons: {
+                                            orderBy: { order: "asc" },
+                                            select: {
+                                                id: true,
+                                                title: true,
+                                                lessonType: true,
+                                                published: true
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 },
+                progress: {
+                    orderBy: { updatedAt: "desc" },
+                    take: 1
+                },
                 activityLogs: {
-                    take: 5,
+                    take: 10,
                     orderBy: { createdAt: "desc" }
                 }
             }
@@ -42,10 +60,25 @@ export async function GET(
             return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
 
-        // Clean sensitive data before returning
-        const { password, ...safeUser } = user as any
+        // Clean sensitive data and flatten for n8n
+        const { password, ...userData } = user as any
 
-        return NextResponse.json(safeUser)
+        return NextResponse.json({
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            phone: userData.phone,
+            role: userData.role,
+            status: userData.status,
+            currentLevel: userData.currentLevel,
+            points: userData.points,
+            xp: userData.xp,
+            streak: userData.streak,
+            whatsappOptIn: userData.whatsappOptIn,
+            lastActivity: userData.activityLogs[0] || null,
+            currentEnrollment: userData.enrollments[0] || null,
+            recentProgress: userData.progress[0] || null,
+        })
     } catch (error) {
         console.error("[User Info API] Error:", error)
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
