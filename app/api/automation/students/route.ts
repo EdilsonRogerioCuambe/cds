@@ -19,7 +19,7 @@ export async function GET() {
                 xp: true,
                 points: true,
                 createdAt: true,
-                lastLoginDay: true,
+                updatedAt: true,
             },
             orderBy: { createdAt: "desc" }
         })
@@ -36,7 +36,7 @@ export async function GET() {
                 xp: s.xp,
                 points: s.points,
                 joinedAt: s.createdAt,
-                lastActive: s.lastLoginDay
+                lastActive: s.updatedAt
             }))
         })
     } catch (error) {

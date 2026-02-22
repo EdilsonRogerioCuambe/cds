@@ -60,7 +60,8 @@ export function CertificateDownloadButton({
 
   const generateQR = async (code: string) => {
     try {
-      const url = await QRCode.toDataURL(`https://cds.school/verify/${code}`)
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cds.school"
+      const url = await QRCode.toDataURL(`${baseUrl}/verify/${code}`)
       setQrUrl(url)
     } catch (err) {
       console.error(err)
