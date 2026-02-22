@@ -2,6 +2,8 @@ import { getCurrentUser } from "@/lib/auth"
 import { getStudentStats } from "@/lib/data"
 import { redirect } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+
 export default async function StudentProfilePage() {
   const user = await getCurrentUser()
   const stats = await getStudentStats()

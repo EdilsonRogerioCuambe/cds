@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth"
 import { getBadges, getCourses, getRecentActivity, getStudentStats, getWeeklyProgress } from "@/lib/data"
 import { redirect } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+
 export default async function StudentDashboardPage() {
   const user = await getCurrentUser()
 
