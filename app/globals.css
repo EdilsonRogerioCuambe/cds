@@ -85,6 +85,13 @@
   .glass {
     @apply bg-background/60 backdrop-blur-lg border-border/50;
   }
+  @keyframes pulse-subtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.95; transform: scale(1.02); }
+  }
+  .animate-pulse-subtle {
+    animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
   .gradient-brand {
     @apply bg-gradient-to-br from-[#10D79E] to-[#132747];
   }
