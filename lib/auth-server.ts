@@ -22,7 +22,7 @@ export const auth = betterAuth({
 
                 try {
                     const response = await resend.emails.send({
-                        from: "CDS <auth@resend.dev>",
+                        from: "CDS <contato@ubuntuweblab.site>",
                         to: email,
                         subject: `${typeLabel} - CDS`,
                         html: getOTPEmailTemplate(otp, typeLabel),
