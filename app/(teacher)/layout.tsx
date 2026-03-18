@@ -7,7 +7,7 @@ export default async function TeacherLayout({
 }: {
   children: React.ReactNode
 }) {
-  await requireRole(UserRole.TEACHER)
+  await requireRole([UserRole.TEACHER, UserRole.ADMIN])
 
   return (
     <AppShell variant="teacher">
