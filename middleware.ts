@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   const isAuthenticated = !!sessionToken
 
   // Define route groups
-  const publicRoutes = ["/", "/sobre", "/contato", "/uploads"]
+  const publicRoutes = ["/", "/sobre", "/contato", "/uploads", "/manifest.webmanifest", "/site.webmanifest", "/favicon.ico", "/apple-touch-icon.png", "/favicon-16x16.png", "/favicon-32x32.png", "/android-chrome-192x192.png", "/android-chrome-512x512.png"]
   const authRoutes = ["/auth/login", "/auth/register", "/auth/forgot-password", "/auth/verify-email"]
 
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`))

@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Mail } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useActionState, useEffect, useState, useTransition } from "react"
+import { useActionState, useEffect, useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 export default function VerifyEmailPage() {
@@ -21,6 +21,17 @@ export default function VerifyEmailPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get("email") || ""
+  const hasSentInitialRef = useRef(false)
+
+  useEffect(() => {
+    // Automatically trigger the first send on mount
+    if (email && !hasSentInitialRef.current) {
+        hasSentInitialRef.current = true
+        startResendTransition(async () => {
+            await resendVerificationAction(email)
+        })
+    }
+  }, [email])
 
   useEffect(() => {
     if (state?.success) {
