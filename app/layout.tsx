@@ -18,6 +18,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
   openGraph: {
     title: "Connect Digital School",
     description: "Connect your future to the world. Metodologia gamificada para adultos.",
@@ -25,7 +30,7 @@ export const metadata: Metadata = {
     siteName: "Connect Digital School",
     images: [
       {
-        url: "/og-image.jpg", // Assuming an image will be provided or generated later
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Connect Digital School",

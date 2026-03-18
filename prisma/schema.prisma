@@ -79,6 +79,8 @@ model User {
   activityLogs     ActivityLog[]
   forumPosts       ForumPost[]       @relation("UserForumPosts")
   forumReplies     ForumReply[]      @relation("UserForumReplies")
+  notifications    Notification[]
+  subscriptions    Subscription[]
 }
 
 model StudyLog {
@@ -335,6 +337,8 @@ enum ActivityType {
   COURSE_ENROLL
   STREAK_MILESTONE
   ACHIEVEMENT_EARNED
+  SUBSCRIPTION_STARTED
+  SUBSCRIPTION_CANCELLED
 }
 
 model ActivityLog {
@@ -370,4 +374,32 @@ model ForumReply {
   postId    String    @db.ObjectId
   post      ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   createdAt DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR, ENROLLMENT
+  link      String?  // Optional link to redirect the user
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Subscription {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mercadoPagoId   String?  @unique // Pre-approval ID
+  status          String   // authorized, paused, cancelled
+  amount          Float
+  nextBillingDate DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }

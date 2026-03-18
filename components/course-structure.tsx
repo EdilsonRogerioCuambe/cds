@@ -6,24 +6,30 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { type Course, type Module } from "@/lib/data"
 import { cn, formatDuration } from "@/lib/utils"
-import {
-    BookOpen,
-    CheckCircle2,
-    ChevronDown,
-    ChevronRight,
-    Clock,
-    FileText,
-    Loader2,
-    Lock,
-    Play,
-    Trophy,
-    Users,
-    Video,
+import { 
+  Book, 
+  BookOpen, 
+  CheckCircle2, 
+  ChevronDown, 
+  ChevronRight, 
+  Clock, 
+  FileText, 
+  Globe, 
+  GraduationCap, 
+  LayoutDashboard, 
+  Loader2, 
+  Lock, 
+  Play, 
+  PlayCircle, 
+  Star, 
+  Trophy, 
+  Users, 
+  Video 
 } from "lucide-react"
+import { CheckoutButton } from "./CheckoutButton"
 import Link from "next/link"
 import { useState } from "react"
 import { CertificateDownloadButton } from "./certificate-download-button"
-
 const levelColors: Record<string, string> = {
   A1: "bg-[#15b376]", // Brand Green
   A2: "bg-[#10b981]",
@@ -300,31 +306,42 @@ function CourseCard({ course }: { course: Course }) {
           {!course.locked && course.modules.length > 0 && (
             <div className="mt-4 flex gap-2">
               {course.isEnrolled ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setExpanded(!expanded)}
-                  className="text-primary hover:text-primary"
-                >
-                  {expanded ? "Ocultar Módulos" : "Ver Módulos"}
-                  {expanded ? (
-                    <ChevronDown className="w-4 h-4 ml-1" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2 w-full">
+                  <Button asChild className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-xl shadow-lg shadow-primary/20">
+                    <Link href={`/student/lesson/${course.modules[0]?.lessons[0]?.id}`}>
+                      Continuar Estudando
+                    </Link>
+                  </Button>
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground px-1">
+                    <span>Progresso: {Math.round(progressPercent)}%</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setExpanded(!expanded)}
+                    className="text-primary hover:text-primary"
+                  >
+                    {expanded ? "Ocultar Módulos" : "Ver Módulos"}
+                    {expanded ? (
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    )}
+                  </Button>
+                </div>
+              ) : course.price > 0 ? (
+                <CheckoutButton
+                  courseId={course.id}
+                  price={course.price}
+                />
               ) : (
                 <Button
-                  size="sm"
                   onClick={handleEnroll}
                   disabled={isEnrolling}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  className="w-full bg-white text-black hover:bg-white/90 font-bold h-12 rounded-xl shadow-xl transition-all active:scale-[0.98]"
                 >
                   {isEnrolling ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Inscrevendo...
-                    </>
+                    <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     "Inscrever-se Agora"
                   )}

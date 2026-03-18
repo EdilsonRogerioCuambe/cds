@@ -24,16 +24,13 @@ import {
 } from "@/components/ui/table"
 import { Ban, Mail, MoreVertical, Search, Trash2, UserPlus } from "lucide-react"
 
-// Mock data
-const mockStudents = [
-  { id: "1", name: "João Silva", email: "joao@example.com", level: "B1", enrolled: "15 Jan 2024", status: "active" },
-  { id: "2", name: "Maria Santos", email: "maria@example.com", level: "A2", enrolled: "12 Jan 2024", status: "active" },
-  { id: "3", name: "Pedro Costa", email: "pedro@example.com", level: "B2", enrolled: "08 Jan 2024", status: "inactive" },
-  { id: "4", name: "Ana Oliveira", email: "ana@example.com", level: "C1", enrolled: "05 Jan 2024", status: "active" },
-  { id: "5", name: "Carlos Ferreira", email: "carlos@example.com", level: "A1", enrolled: "01 Jan 2024", status: "suspended" },
-]
+import prisma from "@/lib/prisma"
 
-export default function AdminStudentsPage() {
+export default async function AdminStudentsPage() {
+  const students = await prisma.user.findMany({
+    where: { role: "STUDENT" },
+    orderBy: { createdAt: "desc" },
+  })
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-6">
@@ -96,24 +93,24 @@ export default function AdminStudentsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockStudents.map((student) => (
+            {students.map((student) => (
               <TableRow key={student.id}>
-                <TableCell className="font-medium">{student.name}</TableCell>
+                <TableCell className="font-medium">{student.name || "Sem Nome"}</TableCell>
                 <TableCell>{student.email}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{student.level}</Badge>
+                  <Badge variant="outline">{student.currentLevel || "A1"}</Badge>
                 </TableCell>
-                <TableCell>{student.enrolled}</TableCell>
+                <TableCell>{new Date(student.createdAt).toLocaleDateString('pt-BR')}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      student.status === "active" ? "default" :
-                      student.status === "inactive" ? "secondary" :
+                      student.status === "ACTIVE" ? "default" :
+                      student.status === "INACTIVE" ? "secondary" :
                       "destructive"
                     }
                   >
-                    {student.status === "active" ? "Ativo" :
-                     student.status === "inactive" ? "Inativo" : "Suspenso"}
+                    {student.status === "ACTIVE" ? "Ativo" :
+                     student.status === "INACTIVE" ? "Inativo" : "Suspenso"}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
@@ -148,7 +145,7 @@ export default function AdminStudentsPage() {
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
         <p className="text-sm text-muted-foreground">
-          Mostrando 5 de 1,234 alunos
+          Mostrando {students.length} de {students.length} alunos
         </p>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled>

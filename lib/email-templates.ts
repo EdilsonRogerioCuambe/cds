@@ -71,3 +71,13 @@ export const getOTPEmailTemplate = (code: string, typeLabel: string) => baseTemp
   </div>
   <p style="font-size: 14px; color: #64748b;">Este código expirará em 5 minutos por motivos de segurança.</p>
 `);
+
+export const getEnrollmentEmail = (name: string, courseTitle: string) => baseTemplate(`
+  <h2 style="color: ${DARK_BASE}; margin-top: 0;">Inscrição Confirmada!</h2>
+  <p>Olá, ${name}! Sua inscrição no curso <strong>${courseTitle}</strong> foi confirmada com sucesso.</p>
+  <p>Estamos muito felizes em ter você como aluno. Você já pode acessar todo o conteúdo na nossa plataforma.</p>
+  <div style="margin: 30px 0;">
+    <a href="${process.env.NEXT_PUBLIC_APP_URL}/student/courses" class="button">Começar a Estudar Agora</a>
+  </div>
+  <p style="font-size: 14px; color: #64748b;">Se precisar de ajuda, entre em contato com nosso suporte.</p>
+`);

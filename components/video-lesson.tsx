@@ -1,6 +1,7 @@
 "use client"
 
 import { QuizPage } from "@/components/quiz-page"
+import { useSession } from "@/lib/auth-client"
 import SplashScreen from "@/components/splash-screen"
 import { VideoMetadata } from "@/components/teacher/video-editor"
 import { VideoUpload } from "@/components/teacher/video-upload"
@@ -548,7 +549,11 @@ function LessonQuizCard({ quiz, lessonId }: { quiz: any; lessonId: string }) {
 // ─── Main VideoLesson Component ───────────────────────────────────────────────
 
 export function VideoLesson({ currentLesson, isEditable = false, initialPosition = 0, isCompleted = false, nextLesson, onLessonUpdate }: VideoLessonProps) {
+  const { data: session } = useSession()
+  const userIdentifier = session?.user?.email || session?.user?.id || "CDS Student"
+  
   const videoRef = useRef<HTMLVideoElement>(null)
+  // ... other refs/states ...
   const lastSyncTimeRef = useRef<number>(Date.now())
   const containerRef = useRef<HTMLDivElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -745,6 +750,16 @@ export function VideoLesson({ currentLesson, isEditable = false, initialPosition
                     onContextMenu={e => e.preventDefault()}
                     controlsList="nodownload"
                   />
+                  
+                  {/* Security Watermark */}
+                  {!isEditable && (
+                    <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-hidden">
+                      <div className="text-[10px] sm:text-xs font-mono text-white/5 font-bold whitespace-nowrap rotate-[-25deg] uppercase tracking-[0.5em] select-none mix-blend-overlay">
+                        {userIdentifier} • {userIdentifier} • {userIdentifier}
+                      </div>
+                    </div>
+                  )}
+
                   {/* HUD Top Left */}
                   <div className={cn("absolute top-4 left-4 flex flex-col gap-1 transition-all duration-500", showControls ? "opacity-100" : "opacity-0")}>
                     <div className="bg-black/60 backdrop-blur-xl border border-white/20 px-3 py-1.5 rounded-lg flex items-center gap-2">

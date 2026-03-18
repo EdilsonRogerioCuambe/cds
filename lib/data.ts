@@ -15,6 +15,7 @@ export interface Course {
   estimatedHours: number
   enrolled: number
   locked: boolean
+  price: number
   isEnrolled?: boolean
   published?: boolean
 }
@@ -128,6 +129,7 @@ export async function getCourses(teacherId?: string): Promise<Course[]> {
       level: course.level as Level,
       title: course.title,
       description: course.description,
+      price: course.price,
       thumbnailUrl: course.thumbnailUrl || undefined,
       modules: course.modules.map(mod => ({
         id: mod.id,

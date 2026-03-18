@@ -23,71 +23,33 @@ import {
 } from "@/components/ui/select"
 import { Edit, Eye, MoreVertical, Plus, Trash2, Users } from "lucide-react"
 
-// Mock data
-const mockCourses = [
-  {
-    id: "1",
-    title: "English A1 - Beginner",
-    description: "Curso introdutório de inglês para iniciantes absolutos",
-    level: "A1",
-    students: 234,
-    lessons: 48,
-    status: "published",
-    thumbnail: "📚"
-  },
-  {
-    id: "2",
-    title: "English A2 - Elementary",
-    description: "Curso elementar de inglês para consolidar bases",
-    level: "A2",
-    students: 198,
-    lessons: 52,
-    status: "published",
-    thumbnail: "📖"
-  },
-  {
-    id: "3",
-    title: "English B1 - Intermediate",
-    description: "Nível intermediário com foco em conversação",
-    level: "B1",
-    students: 156,
-    lessons: 60,
-    status: "published",
-    thumbnail: "🎯"
-  },
-  {
-    id: "4",
-    title: "English B2 - Upper Intermediate",
-    description: "Inglês avançado para comunicação profissional",
-    level: "B2",
-    students: 89,
-    lessons: 58,
-    status: "published",
-    thumbnail: "🚀"
-  },
-  {
-    id: "5",
-    title: "English C1 - Advanced",
-    description: "Curso avançado com textos complexos e acadêmicos",
-    level: "C1",
-    students: 45,
-    lessons: 64,
-    status: "draft",
-    thumbnail: "🎓"
-  },
-  {
-    id: "6",
-    title: "Business English",
-    description: "Inglês para negócios e contextos corporativos",
-    level: "B2",
-    students: 112,
-    lessons: 40,
-    status: "published",
-    thumbnail: "💼"
-  },
-]
+import prisma from "@/lib/prisma"
 
-export default function AdminCoursesPage() {
+export default async function AdminCoursesPage() {
+  const dbCourses = await prisma.course.findMany({
+    include: {
+      _count: {
+        select: { enrollments: true }
+      },
+      modules: {
+        include: {
+          lessons: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  })
+
+  const courses = dbCourses.map(course => ({
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    level: course.level,
+    students: course._count.enrollments,
+    lessons: course.modules.reduce((acc, mod) => acc + mod.lessons.length, 0),
+    status: course.published ? "published" : "draft",
+    thumbnail: course.thumbnailUrl || "📚"
+  }))
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center mb-6">
@@ -105,24 +67,24 @@ export default function AdminCoursesPage() {
       <div className="grid gap-4 md:grid-cols-4 mb-6">
         <div className="bg-card rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Total de Cursos</p>
-          <p className="text-2xl font-bold">{mockCourses.length}</p>
+          <p className="text-2xl font-bold">{courses.length}</p>
         </div>
         <div className="bg-card rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Publicados</p>
           <p className="text-2xl font-bold text-green-600">
-            {mockCourses.filter(c => c.status === "published").length}
+            {courses.filter(c => c.status === "published").length}
           </p>
         </div>
         <div className="bg-card rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Rascunhos</p>
           <p className="text-2xl font-bold text-orange-600">
-            {mockCourses.filter(c => c.status === "draft").length}
+            {courses.filter(c => c.status === "draft").length}
           </p>
         </div>
         <div className="bg-card rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">Total de Alunos</p>
           <p className="text-2xl font-bold">
-            {mockCourses.reduce((sum, c) => sum + c.students, 0)}
+            {courses.reduce((sum, c) => sum + c.students, 0)}
           </p>
         </div>
       </div>
@@ -156,7 +118,7 @@ export default function AdminCoursesPage() {
 
       {/* Courses Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {mockCourses.map((course) => (
+        {courses.map((course) => (
           <Card key={course.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex justify-between items-start">

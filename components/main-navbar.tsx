@@ -1,6 +1,7 @@
 "use client"
 
 import { signOutAction } from "@/app/actions/auth"
+import { NotificationBell } from "@/components/notification-bell"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
 import { cn } from "@/lib/utils"
@@ -55,6 +56,7 @@ export function MainNavbar() {
               <>
                 {isAuthenticated ? (
                   <>
+                    <NotificationBell />
                     <Button variant="ghost" asChild className="font-semibold text-muted-foreground">
                       <Link href="/dashboard" className="flex items-center gap-2">
                         <LayoutDashboard className="w-4 h-4" />

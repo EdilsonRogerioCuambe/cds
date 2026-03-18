@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { preference } from "@/lib/mercadopago";
+import { preApproval } from "@/lib/mercadopago";
 import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
@@ -28,39 +28,25 @@ export async function POST(req: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    const preferenceResult = await preference.create({
+    const preApprovalResult = await preApproval.create({
       body: {
-        items: [
-          {
-            id: course.id,
-            title: course.title,
-            quantity: 1,
-            unit_price: course.price,
-            currency_id: "BRL",
-          },
-        ],
-        payer: {
-          email: user.email,
-          name: user.name || undefined,
-        },
-        back_urls: {
-          success: `${appUrl}/courses/${courseId}/success`,
-          failure: `${appUrl}/courses/${courseId}`,
-          pending: `${appUrl}/courses/${courseId}`,
-        },
-        auto_return: "approved",
-        metadata: {
-          courseId: course.id,
-          userId: user.id,
-        },
+        reason: `Assinatura: ${course.title}`,
         external_reference: `${user.id}_${course.id}`,
-        notification_url: `${appUrl}/api/webhooks/mercadopago`,
+        payer_email: user.email,
+        auto_recurring: {
+          frequency: 1,
+          frequency_type: "months",
+          transaction_amount: course.price,
+          currency_id: "BRL",
+        },
+        back_url: `${appUrl}/student/courses/${courseId}/success`,
+        status: "pending",
       },
     });
 
     return NextResponse.json({
-      id: preferenceResult.id,
-      init_point: preferenceResult.init_point,
+      id: preApprovalResult.id,
+      init_point: preApprovalResult.init_point,
     });
   } catch (error: any) {
     console.error("Checkout Preference Error:", error);

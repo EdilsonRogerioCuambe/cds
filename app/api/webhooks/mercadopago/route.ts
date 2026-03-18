@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
-import { payment as mercadopagoPayment } from "@/lib/mercadopago";
+import { payment as mercadopagoPayment, preApproval } from "@/lib/mercadopago";
+import { Resend } from "resend";
+import { getEnrollmentEmail } from "@/lib/email-templates";
+import { createNotification } from "@/lib/actions/notifications";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Based on Mercado Pago webhook signature verification doc
 // signature: "ts=timestamp,v1=hash"
@@ -11,7 +16,80 @@ export async function POST(req: NextRequest) {
     const id = url.searchParams.get("data.id");
     const type = url.searchParams.get("type");
 
-    // Only process payment updates for simplicity
+    // Only process payment and subscription updates
+    if (type === "subscription_preapproval" && id) {
+        const subInfo = await preApproval.get({ id: id });
+        if (subInfo && subInfo.external_reference && subInfo.status) {
+            const [userId, courseId] = subInfo.external_reference.split("_");
+            
+            await prisma.subscription.upsert({
+                where: { mercadoPagoId: id },
+                update: {
+                    status: subInfo.status as string,
+                    nextBillingDate: subInfo.next_payment_date ? new Date(subInfo.next_payment_date) : undefined,
+                },
+                create: {
+                    mercadoPagoId: id,
+                    userId: userId,
+                    status: subInfo.status as string,
+                    amount: subInfo.auto_recurring?.transaction_amount || 0,
+                    nextBillingDate: subInfo.next_payment_date ? new Date(subInfo.next_payment_date) : undefined,
+                }
+            });
+
+            // If it's authorized, enroll the user
+            if (subInfo.status === "authorized") {
+                const existingEnrollment = await prisma.enrollment.findUnique({
+                    where: { userId_courseId: { userId, courseId } }
+                });
+
+                if (!existingEnrollment) {
+                    await prisma.enrollment.create({
+                        data: {
+                            userId: userId,
+                            courseId: courseId,
+                            status: "ACTIVE",
+                        },
+                    });
+
+                    // Fetch details for email/notification
+                    const [user, course] = await Promise.all([
+                        prisma.user.findUnique({ where: { id: userId } }),
+                        prisma.course.findUnique({ where: { id: courseId } })
+                    ]);
+
+                    if (user && course) {
+                        // Send Email
+                        await resend.emails.send({
+                            from: "CDS <contato@ubuntuweblab.site>",
+                            to: user.email,
+                            subject: `Bem-vindo ao curso: ${course.title} - CDS`,
+                            html: getEnrollmentEmail(user.name || "Aluno", course.title),
+                        }).catch(err => console.error("Error sending sub enrollment email:", err));
+
+                        // Create Notification
+                        await createNotification({
+                            userId: user.id,
+                            title: "Assinatura Ativada! 🎉",
+                            message: `Sua assinatura foi confirmada e você já pode acessar o curso: ${course.title}.`,
+                            type: "ENROLLMENT",
+                            link: `/student/courses`,
+                        }).catch(err => console.error("Error creating sub notification:", err));
+                    }
+                }
+
+                await prisma.activityLog.create({
+                    data: {
+                        userId: userId,
+                        type: "SUBSCRIPTION_STARTED",
+                        title: `Assinatura Ativada: ${subInfo.reason}`,
+                    }
+                }).catch(() => {});
+            }
+        }
+        return NextResponse.json({ received: true });
+    }
+
     if (type !== "payment" || !id) {
       return NextResponse.json({ received: true });
     }
@@ -105,6 +183,31 @@ export async function POST(req: NextRequest) {
             status: "ACTIVE",
           },
         });
+
+        // 1. Fetch User and Course details for email/notification
+        const [user, course] = await Promise.all([
+          prisma.user.findUnique({ where: { id: userId } }),
+          prisma.course.findUnique({ where: { id: courseId } })
+        ]);
+
+        if (user && course) {
+            // 2. Send Enrollment Confirmation Email
+            await resend.emails.send({
+                from: "CDS <contato@ubuntuweblab.site>",
+                to: user.email,
+                subject: `Bem-vindo ao curso: ${course.title} - CDS`,
+                html: getEnrollmentEmail(user.name || "Aluno", course.title),
+            }).catch(err => console.error("Error sending enrollment email:", err));
+
+            // 3. Create In-App Notification
+            await createNotification({
+                userId: user.id,
+                title: "Matrícula Confirmada! 🎉",
+                message: `Você já pode começar a estudar o curso: ${course.title}. Clique para começar!`,
+                type: "ENROLLMENT",
+                link: `/student/courses`,
+            }).catch(err => console.error("Error creating notification:", err));
+        }
       }
     }
 
