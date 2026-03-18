@@ -474,7 +474,7 @@ export default function PremiumSplashScreen({
   return (
     <div
       className={`fixed inset-0 z-[9999] transition-all duration-600 ${
-        isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
       }`}
     >
       {/* Background - White */}
