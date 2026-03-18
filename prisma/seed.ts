@@ -1,23 +1,13 @@
 import { PrismaClient, Role, UserStatus } from "@prisma/client";
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { auth } from "../lib/auth-server";
 import { Resend } from "resend";
 import { getAdminInviteEmail } from "../lib/email-templates";
 
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "mongodb",
-  }),
-  emailAndPassword: {
-    enabled: true,
-  },
-});
-
 async function main() {
-  console.log('🌱 Starting Clean Database Seed with Email Notification...\n');
+  console.log('🌱 Starting Clean Database Seed with REAL Auth Config...\n');
 
   // 1. Define Admin Data
   const adminEmail = "edicuambe@gmail.com";
@@ -39,22 +29,27 @@ async function main() {
   console.log('✨ Creating Fresh Admin Account...');
   
   try {
-    // 2. Create via Better Auth API
-    await auth.api.signUpEmail({
+    // 2. Create via REAL Better Auth API (this handles hashing and additionalFields)
+    const result = await auth.api.signUpEmail({
       body: {
         email: adminEmail,
         password: tempPassword,
         name: "Edilson Cuambe",
+        // Pass essential fields directly
+        role: "ADMIN",
+        status: "PENDING",
+        registrationNumber: "CDS000001",
       },
     });
 
-    // 3. Elevate to ADMIN and set PENDING status
-    const user = await prisma.user.update({
+    if (!result) {
+      throw new Error("Failed to create admin via Better Auth API");
+    }
+
+    // 3. Ensure email is verified in DB directly for admin
+    await prisma.user.update({
       where: { email: adminEmail },
       data: {
-        role: "ADMIN" as Role,
-        status: "PENDING" as UserStatus,
-        registrationNumber: "CDS000001",
         emailVerified: true
       }
     });
@@ -82,8 +77,9 @@ async function main() {
     console.log('📝 Status: PENDING (Redirected to password change on login)');
     console.log('--------------------------------------------------\n');
 
-  } catch (err) {
-    console.error('❌ Error creating admin:', err);
+  } catch (err: any) {
+    console.error('❌ Error creating admin:', err.message || err);
+    if (err.body) console.error('📦 Error Body:', JSON.stringify(err.body, null, 2));
   }
 
   console.log('✨ Seed finished.');
