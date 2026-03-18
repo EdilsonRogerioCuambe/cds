@@ -21,12 +21,14 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.some(route => pathname.startsWith(route))
 
   // 1. If not authenticated and trying to access protected routes
+  /*
   if (!isAuthenticated && !isPublicRoute && !isAuthRoute && pathname !== "/docs/business-rules") {
     console.log(`[Middleware] Not authenticated, redirecting ${pathname} -> /auth/login`)
     const loginUrl = new URL("/auth/login", request.url)
     loginUrl.searchParams.set("callbackUrl", pathname)
     return NextResponse.redirect(loginUrl)
   }
+  */
 
   // 2. If authenticated and trying to access auth pages
   // We keep this commented out to avoid loops when the session cookie exists but is invalid on the server.
