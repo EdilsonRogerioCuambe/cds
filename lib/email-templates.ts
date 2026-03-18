@@ -2,7 +2,7 @@
  * Branded HTML Email Templates for Connect Digital School
  */
 
-const APP_NAME = "Connect Digital School";
+const APP_NAME = "CDS";
 const BRAND_COLOR = "#10D79E";
 const DARK_BASE = "#132747";
 

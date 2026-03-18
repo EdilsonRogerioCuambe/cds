@@ -68,7 +68,7 @@ async function main() {
     const { data, error } = await resend.emails.send({
       from: "CDS <contato@ubuntuweblab.site>",
       to: adminEmail,
-      subject: "Seu Acesso Administrativo - Connect Digital School",
+      subject: "Seu Acesso Administrativo - CDS",
       html: getAdminInviteEmail(
         "Edilson Rogério Cuambe",
         tempPassword,
