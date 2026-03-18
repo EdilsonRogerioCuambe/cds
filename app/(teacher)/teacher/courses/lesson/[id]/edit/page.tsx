@@ -36,7 +36,7 @@ export default async function EditLessonPage({ params }: { params: Promise<{ id:
   })
 
   if (!lesson) notFound()
-  if (lesson.module.course.teacherId !== user.id && user.role !== "ADMIN") redirect("/teacher/dashboard")
+  if (!lesson.module.course.instructorIds.includes(user.id) && user.role !== "ADMIN") redirect("/teacher/dashboard")
 
   const quiz = lesson.quizzes[0]
   const lessonType = lesson.lessonType || "VIDEO"

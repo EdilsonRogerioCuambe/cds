@@ -22,7 +22,7 @@ export default async function EditModulePage({ params }: { params: Promise<{ id:
   })
 
   if (!module) notFound()
-  if (module.course.teacherId !== user.id && user.role !== "ADMIN") redirect("/teacher/dashboard")
+  if (!module.course.instructorIds.includes(user.id) && user.role !== "ADMIN") redirect("/teacher/dashboard")
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">

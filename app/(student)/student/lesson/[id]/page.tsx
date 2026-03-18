@@ -31,7 +31,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   })
 
   if (!lesson) notFound()
-  if (!lesson.published && lesson.module.course.teacherId !== user.id && user.role !== "ADMIN") {
+  if (!lesson.published && !lesson.module.course.instructorIds.includes(user.id) && user.role !== "ADMIN") {
     notFound()
   }
 

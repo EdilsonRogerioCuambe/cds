@@ -21,7 +21,7 @@ export default async function EditCoursePage({ params }: { params: Promise<{ id:
   })
 
   if (!course) notFound()
-  if (course.teacherId !== user.id && user.role !== "ADMIN") redirect("/teacher/dashboard")
+  if (!course.instructorIds.includes(user.id) && user.role !== "ADMIN") redirect("/teacher/dashboard")
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl space-y-8">

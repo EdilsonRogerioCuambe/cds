@@ -17,7 +17,7 @@ export default async function TeacherStudentsPage() {
 
   // Fetch students enrolled in this teacher's courses
   const enrollments = await prisma.enrollment.findMany({
-    where: { course: { teacherId: user.id } },
+    where: { course: { instructorIds: { has: user.id } } },
     include: {
       user: true,
       course: {

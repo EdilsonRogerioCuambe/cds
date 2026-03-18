@@ -47,11 +47,16 @@ import { ImageUpload } from "./image-upload"
 import { SortableItem } from "./sortable-item"
 
 import { addLesson, addModule, createCourse, deleteLesson, deleteModule, reorderLessons, reorderModules, updateCourse } from "@/lib/actions/teacher"
+import { getTeachers } from "@/app/actions/users"
+import { useSession } from "@/lib/auth-client"
 import { formatStudyTime } from "@/lib/utils/time"
-import { ArrowLeft, Clock, Edit, FileText, GripVertical, HelpCircle, PlusCircle, Save, Trash2, Video, Zap } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { ArrowLeft, Check, ChevronsUpDown, Clock, Edit, FileText, GripVertical, HelpCircle, PlusCircle, Save, Trash2, Video, X, Zap } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 interface CourseEditorProps {
@@ -60,7 +65,10 @@ interface CourseEditorProps {
 
 export function CourseEditor({ initialData }: CourseEditorProps) {
   const router = useRouter()
+  const { data: session } = useSession()
   const [loading, setLoading] = useState(false)
+  const [teachers, setTeachers] = useState<any[]>([])
+  const [loadingTeachers, setLoadingTeachers] = useState(false)
   const [course, setCourse] = useState(() => {
     if (initialData) {
       return {
@@ -82,9 +90,26 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
       duration: "",
       highlights: [] as string[],
       requirements: [] as string[],
-      modules: []
+      instructorIds: initialData?.instructorIds || []
     }
   })
+
+  useEffect(() => {
+    async function fetchTeachers() {
+      if ((session?.user as any)?.role === "ADMIN") {
+        setLoadingTeachers(true)
+        try {
+          const data = await getTeachers()
+          setTeachers(data)
+        } catch (error) {
+          console.error("Error fetching teachers:", error)
+        } finally {
+          setLoadingTeachers(false)
+        }
+      }
+    }
+    fetchTeachers()
+  }, [(session?.user as any)?.role])
 
   const [highlightInput, setHighlightInput] = useState("")
   const [requirementInput, setRequirementInput] = useState("")
@@ -145,6 +170,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
           duration: course.duration,
           highlights: course.highlights,
           requirements: course.requirements,
+          instructorIds: course.instructorIds,
         })
         toast.success("Informações básicas salvas")
       } else {
@@ -158,6 +184,7 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
           duration: course.duration,
           highlights: course.highlights,
           requirements: course.requirements,
+          instructorIds: course.instructorIds,
         })
         toast.success("Curso criado com sucesso")
         router.push(`/teacher/courses/${newCourse.id}/edit`)
@@ -597,6 +624,90 @@ export function CourseEditor({ initialData }: CourseEditorProps) {
                   />
                 )}
               </div>
+
+              {/* Instructors Selection (Admin only) */}
+              {(session?.user as any)?.role === "ADMIN" && (
+                <div className="space-y-2 pt-2 border-t">
+                  <Label>Instrutores do Curso</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                        disabled={loadingTeachers}
+                      >
+                        {course.instructorIds?.length > 0
+                          ? `${course.instructorIds.length} instrutor(es) selecionado(s)`
+                          : "Selecionar instrutores"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar instrutor..." />
+                        <CommandList>
+                          <CommandEmpty>Nenhum instrutor encontrado.</CommandEmpty>
+                          <CommandGroup>
+                            {teachers.map((teacher) => (
+                              <CommandItem
+                                key={teacher.id}
+                                onSelect={() => {
+                                  const ids = [...(course.instructorIds || [])]
+                                  if (ids.includes(teacher.id)) {
+                                    setCourse((prev: any) => ({
+                                      ...prev,
+                                      instructorIds: ids.filter(id => id !== teacher.id)
+                                    }))
+                                  } else {
+                                    setCourse((prev: any) => ({
+                                      ...prev,
+                                      instructorIds: [...ids, teacher.id]
+                                    }))
+                                  }
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    course.instructorIds?.includes(teacher.id) ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {teacher.name || teacher.email}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Selected Instructors Badges */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {course.instructorIds?.map((id: string) => {
+                      const t = teachers.find(teacher => teacher.id === id)
+                      if (!t) return null
+                      return (
+                        <Badge key={id} variant="secondary" className="gap-1 pr-1.5">
+                          {t.name || t.email}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCourse((prev: any) => ({
+                                ...prev,
+                                instructorIds: prev.instructorIds.filter((iid: string) => iid !== id)
+                              }))
+                            }}
+                            className="ml-1 rounded-full hover:bg-muted p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

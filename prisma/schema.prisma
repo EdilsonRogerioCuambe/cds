@@ -74,7 +74,8 @@ model User {
   progress         Progress[]
   payments         Payment[]
   certificates     Certificate[]
-  courses          Course[]          @relation("CourseTeacher")
+  instructedCourses    Course[]   @relation("CourseInstructors", fields: [instructedCourseIds], references: [id])
+  instructedCourseIds String[]   @db.ObjectId
   studyLogs        StudyLog[]
   userAchievements UserAchievement[]
   activityLogs     ActivityLog[]
@@ -151,8 +152,8 @@ model Course {
   requirements String[]
   published    Boolean  @default(false)
 
-  teacherId String? @db.ObjectId
-  teacher   User?   @relation("CourseTeacher", fields: [teacherId], references: [id])
+  instructorIds String[] @db.ObjectId
+  instructors   User[]   @relation("CourseInstructors", fields: [instructorIds], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

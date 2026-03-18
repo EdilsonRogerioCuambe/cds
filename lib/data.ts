@@ -94,20 +94,20 @@ export interface StudentStats {
 
 // ===== DATA FETCHING FUNCTIONS =====
 
-export async function getCourses(teacherId?: string): Promise<Course[]> {
+export async function getCourses(instructorId?: string): Promise<Course[]> {
   try {
     const user = await getCurrentUser()
     const dbCourses = await prisma.course.findMany({
       where: {
-        ...(teacherId && teacherId !== "null" ? { teacherId } : { published: true }),
+        ...(instructorId && instructorId !== "null" ? { instructorIds: { has: instructorId } } : { published: true }),
       },
       include: {
         modules: {
-          where: teacherId ? {} : { published: true },
+          where: instructorId ? {} : { published: true },
           orderBy: { order: 'asc' },
           include: {
             lessons: {
-              where: teacherId ? {} : { published: true },
+              where: instructorId ? {} : { published: true },
               orderBy: { order: 'asc' },
               include: { quizzes: true }
             }
@@ -546,10 +546,10 @@ export async function getWeeklyProgress() {
   }
 }
 
-export async function getTeacherStats(teacherId?: string) {
+export async function getTeacherStats(instructorId?: string) {
   try {
     const user = await getCurrentUser()
-    const targetId = teacherId || user?.id
+    const targetId = instructorId || user?.id
 
     if (!targetId) {
       return {
@@ -570,22 +570,22 @@ export async function getTeacherStats(teacherId?: string) {
     // 1. Fetch Basic counts and enrollments
     const [activeStudents, lessons, enrollments, quizAttempts, completedProgress] = await Promise.all([
       prisma.enrollment.count({
-        where: { course: { teacherId: targetId }, status: "ACTIVE" }
+        where: { course: { instructorIds: { has: targetId } }, status: "ACTIVE" }
       }),
       prisma.lesson.findMany({
-        where: { module: { course: { teacherId: targetId } } },
+        where: { module: { course: { instructorIds: { has: targetId } } } },
         select: { id: true, moduleId: true, module: { select: { courseId: true } } }
       }),
       prisma.enrollment.findMany({
-        where: { course: { teacherId: targetId } },
+        where: { course: { instructorIds: { has: targetId } } },
         include: { user: true }
       }),
       prisma.quizAttempt.findMany({
-        where: { quiz: { lesson: { module: { course: { teacherId: targetId } } } } },
+        where: { quiz: { lesson: { module: { course: { instructorIds: { has: targetId } } } } } },
         select: { score: true, createdAt: true, userId: true, user: { select: { name: true, currentLevel: true } } }
       }),
       prisma.progress.count({
-        where: { lesson: { module: { course: { teacherId: targetId } } }, completed: true }
+        where: { lesson: { module: { course: { instructorIds: { has: targetId } } } }, completed: true }
       })
     ])
 

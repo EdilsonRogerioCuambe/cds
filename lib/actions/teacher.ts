@@ -15,6 +15,7 @@ export async function createCourse(data: {
   duration?: string
   highlights?: string[]
   requirements?: string[]
+  instructorIds?: string[]
 }) {
   const user = await getCurrentUser()
   if (!user || user.role !== Role.TEACHER && user.role !== Role.ADMIN) {
@@ -24,7 +25,7 @@ export async function createCourse(data: {
   const course = await prisma.course.create({
     data: {
       ...data,
-      teacherId: user.id,
+      instructorIds: data.instructorIds || [user.id],
     },
   })
 
@@ -43,16 +44,17 @@ export async function updateCourse(id: string, data: {
   duration?: string
   highlights?: string[]
   requirements?: string[]
+  instructorIds?: string[]
 }) {
   const user = await getCurrentUser()
   if (!user) throw new Error("Unauthorized")
 
   const courseCheck = await prisma.course.findUnique({
     where: { id },
-    select: { teacherId: true }
+    select: { instructorIds: true }
   })
 
-  if (!courseCheck || (courseCheck.teacherId !== user.id && user.role !== Role.ADMIN)) {
+  if (!courseCheck || (!courseCheck.instructorIds.includes(user.id) && user.role !== Role.ADMIN)) {
     throw new Error("Unauthorized")
   }
 
@@ -302,10 +304,10 @@ export async function deleteCourse(id: string) {
 
   const courseCheck = await prisma.course.findUnique({
     where: { id },
-    select: { teacherId: true }
+    select: { instructorIds: true }
   })
 
-  if (!courseCheck || (courseCheck.teacherId !== user.id && user.role !== Role.ADMIN)) {
+  if (!courseCheck || (!courseCheck.instructorIds.includes(user.id) && user.role !== Role.ADMIN)) {
     throw new Error("Unauthorized")
   }
 
