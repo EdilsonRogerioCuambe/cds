@@ -7,42 +7,45 @@ import { Label } from "@/components/ui/label"
 import { Check, Loader2, Rocket, Settings, User } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter, useSearchParams } from "next/navigation"
-import { resetPasswordAction } from "@/app/actions/auth"
+import { changePasswordOnboardingAction } from "@/app/actions/auth"
+import { useSession } from "@/lib/auth-client"
 
 export default function OnboardingPage() {
+    const { data: session } = useSession()
     const [step, setStep] = useState(1)
     const [isLoading, setIsLoading] = useState(false)
     const searchParams = useSearchParams()
-    const email = searchParams.get("email") || ""
+    const email = searchParams.get("email") || session?.user?.email || ""
     const router = useRouter()
 
     const [formData, setFormData] = useState({
-        password: "",
-        otp: "",
+        currentPassword: "",
+        newPassword: "",
         bio: "",
         specialty: "",
     })
-
-    const handleNext = () => setStep(step + 1)
 
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
         
-        // Use the existing resetPasswordAction logic
         const data = new FormData()
-        data.append("email", email)
-        data.append("password", formData.password)
-        data.append("token", formData.otp) // Using 'token' as expected by resetPasswordAction
+        data.append("currentPassword", formData.currentPassword)
+        data.append("newPassword", formData.newPassword)
 
-        const res = await resetPasswordAction(null, data)
+        const res = await changePasswordOnboardingAction(null, data)
         setIsLoading(false)
 
         if (res.success) {
-            toast.success("Senha configurada com sucesso!")
-            setStep(2)
+            toast.success("Senha atualizada com sucesso!")
+            // If admin, we can finish here or go to profile
+            if ((session?.user as any)?.role === "ADMIN") {
+                router.push("/admin/dashboard")
+            } else {
+                setStep(2)
+            }
         } else {
-            toast.error(res.error || "Erro ao configurar senha. Verifique o código.")
+            toast.error(res.error || "Erro ao atualizar senha. Verifique sua senha temporária.")
         }
     }
 
@@ -50,14 +53,15 @@ export default function OnboardingPage() {
         e.preventDefault()
         setIsLoading(true)
         
-        // Here we could have an action to update user profile
-        // For now, let's simulate and redirect to pending
         setTimeout(() => {
-            setIsLoading(false)
-            toast.success("Perfil atualizado! Aguarde a aprovação final.")
-            router.push("/auth/pending")
+            setIsLoading(true)
+            toast.success("Perfil atualizado!")
+            const userRole = (session?.user as any)?.role
+            router.push(userRole === "TEACHER" ? "/teacher/dashboard" : "/student/dashboard")
         }, 1500)
     }
+
+    const isAdmin = (session?.user as any)?.role === "ADMIN"
 
     return (
         <div className="max-w-md mx-auto space-y-8 py-10">
@@ -65,56 +69,70 @@ export default function OnboardingPage() {
                 <div className="inline-flex p-3 rounded-2xl bg-primary/10 mb-4">
                     <Rocket className="w-8 h-8 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-[#132747]">Bem-vindo à Connect!</h1>
-                <p className="text-muted-foreground">Vamos configurar sua conta de instrutor em poucos passos.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-[#132747]">
+                    {isAdmin ? "Configuração de Administrador" : "Bem-vindo à Connect!"}
+                </h1>
+                <p className="text-muted-foreground">
+                    {isAdmin 
+                        ? "Para sua segurança, atualize sua senha temporária agora." 
+                        : "Vamos configurar sua conta de instrutor em poucos passos."}
+                </p>
             </div>
 
-            {/* Progress Stepper */}
-            <div className="flex items-center justify-between px-2">
-                {[1, 2].map((i) => (
-                    <div key={i} className="flex items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${step >= i ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                            {step > i ? <Check className="w-4 h-4" /> : i}
+            {/* Progress Stepper - Show only if not admin or show simplified */}
+            {!isAdmin && (
+                <div className="flex items-center justify-between px-2">
+                    {[1, 2].map((i) => (
+                        <div key={i} className="flex items-center">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors ${step >= i ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
+                                {step > i ? <Check className="w-4 h-4" /> : i}
+                            </div>
+                            {i === 1 && <div className={`w-24 h-1 mx-2 rounded ${step > 1 ? 'bg-primary' : 'bg-muted'}`} />}
                         </div>
-                        {i === 1 && <div className={`w-24 h-1 mx-2 rounded ${step > 1 ? 'bg-primary' : 'bg-muted'}`} />}
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {step === 1 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
                     <div className="space-y-2">
                         <h2 className="text-xl font-bold flex items-center gap-2">
-                            <Settings className="w-5 h-5" /> Configurar Senha
+                            <Settings className="w-5 h-5" /> {isAdmin ? "Atualizar Senha" : "Configurar Senha"}
                         </h2>
-                        <p className="text-sm text-muted-foreground">Utilize o código enviado para seu e-mail ({email}) para definir sua senha de acesso.</p>
+                        <p className="text-sm text-muted-foreground">
+                            {isAdmin 
+                                ? "Insira sua senha temporária e escolha uma nova senha forte."
+                                : `Utilize as informações enviadas para seu e-mail (${email}) para definir sua senha.`}
+                        </p>
                     </div>
 
                     <form onSubmit={handlePasswordSubmit} className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="otp">Código de Verificação (OTP)</Label>
+                            <Label htmlFor="currentPassword">Senha Atual (Temporária)</Label>
                             <Input 
-                                id="otp" 
-                                placeholder="000000" 
-                                value={formData.otp}
-                                onChange={(e) => setFormData({...formData, otp: e.target.value})}
+                                id="currentPassword" 
+                                type="password"
+                                placeholder="Sua senha temporária" 
+                                value={formData.currentPassword}
+                                onChange={(e) => setFormData({...formData, currentPassword: e.target.value})}
                                 required 
-                                className="h-12 text-center text-xl tracking-widest font-bold"
+                                className="h-12"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="password">Nova Senha</Label>
+                            <Label htmlFor="newPassword">Nova Senha</Label>
                             <Input 
-                                id="password" 
+                                id="newPassword" 
                                 type="password" 
-                                value={formData.password}
-                                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                placeholder="Mínimo 6 caracteres"
+                                value={formData.newPassword}
+                                onChange={(e) => setFormData({...formData, newPassword: e.target.value})}
                                 required 
                                 className="h-12"
                             />
                         </div>
                         <Button type="submit" disabled={isLoading} className="w-full h-12 rounded-xl gradient-brand shadow-lg">
-                            {isLoading ? <Loader2 className="animate-spin" /> : "Confirmar Senha"}
+                            {isLoading ? <Loader2 className="animate-spin" /> : "Atualizar Senha"}
                         </Button>
                     </form>
                 </div>

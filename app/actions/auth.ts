@@ -327,3 +327,43 @@ export async function inviteTeacherAction(email: string, name: string) {
         return { error: "Falha ao enviar convite" }
     }
 }
+
+/**
+ * Server Action to change password and complete onboarding
+ */
+export async function changePasswordOnboardingAction(prevState: any, formData: FormData) {
+    const currentPassword = formData.get("currentPassword") as string;
+    const newPassword = formData.get("newPassword") as string;
+
+    if (!newPassword || newPassword.length < 6) return { error: "Nova senha deve ter pelo menos 6 caracteres" };
+    if (!currentPassword) return { error: "Senha atual é obrigatória" };
+
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) return { error: "Sessão expirada ou não encontrada" };
+
+    try {
+        // 1. Change password via Better Auth
+        await auth.api.changePassword({
+            body: {
+                currentPassword,
+                newPassword,
+                revokeOtherSessions: true
+            },
+            headers: await headers()
+        });
+
+        // 2. Update status to ACTIVE
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: { status: "ACTIVE" }
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("[OnboardingAction] Erro:", error.message || error);
+        return { error: translateError(error.message) || "Falha ao atualizar senha" };
+    }
+}

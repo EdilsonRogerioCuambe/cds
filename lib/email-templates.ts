@@ -102,3 +102,17 @@ export const getTeacherInviteEmail = (name: string, url: string) => baseTemplate
   </div>
   <p style="font-size: 14px; color: #64748b;">Este link é pessoal e não deve ser compartilhado.</p>
 `);
+export const getAdminInviteEmail = (name: string, tempPassword: string) => baseTemplate(`
+  <h2 style="color: ${DARK_BASE}; margin-top: 0;">Acesso Administrativo - CDS</h2>
+  <p>Olá, ${name}! Sua conta de administrador na plataforma <strong>${APP_NAME}</strong> foi criada com sucesso.</p>
+  <p>Para o seu primeiro acesso, utilize as credenciais abaixo:</p>
+  <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #e2e8f0;">
+    <p style="margin: 0 0 10px 0;"><strong>E-mail:</strong> edicuambe@gmail.com</p>
+    <p style="margin: 0;"><strong>Senha Temporária:</strong> <span style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; color: ${BRAND_COLOR}; background: #fff; padding: 2px 8px; border-radius: 4px;">${tempPassword}</span></p>
+  </div>
+  <p style="font-weight: bold; color: ${DARK_BASE};">IMPORTANTE: Por motivos de segurança, você deve alterar sua senha imediatamente ao entrar.</p>
+  <div style="margin: 30px 0; text-align: center;">
+    <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" class="button">Acessar Painel Agora</a>
+  </div>
+  <p style="font-size: 13px; color: #64748b; border-top: 1px solid #f1f5f9; pt-20">Este convite é pessoal e intransferível.</p>
+`);
