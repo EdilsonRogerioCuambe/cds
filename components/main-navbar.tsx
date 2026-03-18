@@ -10,9 +10,9 @@ import Link from "next/link"
 import { useState } from "react"
 
 const navLinks = [
-  { label: "Cursos", href: "#courses" },
-  { label: "Níveis", href: "#levels" },
-  { label: "Metodologia", href: "#methods" },
+  { label: "Cursos", href: "/courses" },
+  { label: "Níveis", href: "/levels" },
+  { label: "Metodologia", href: "/methodology" },
   { label: "Sobre nós", href: "/docs/business-rules" },
 ]
 
