@@ -440,7 +440,6 @@ export default function PremiumSplashScreen({
   useEffect(() => {
     if (loadingTextProp) {
         setInternalLoadingText(loadingTextProp)
-        return
     }
 
     // Simular progresso

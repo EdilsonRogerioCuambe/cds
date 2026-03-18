@@ -112,10 +112,14 @@ export function StudentDashboard({
   const xpPercent = Math.round(
     (stats.xp / stats.xpToNext) * 100
   )
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  const handleComplete = React.useCallback(() => {
+    setIsLoading(false)
+  }, [])
 
   if (isLoading) {
-    return <SplashScreen onComplete={() => setIsLoading(false)} />
+    return <SplashScreen onComplete={handleComplete} />
   }
   return (
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8 overflow-x-hidden">
