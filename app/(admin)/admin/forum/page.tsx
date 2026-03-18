@@ -1,20 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import {
     Table,
     TableBody,
     TableCell,
@@ -22,148 +8,163 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Ban, MessageSquare, MoreVertical, Search, Trash2 } from "lucide-react"
+import {
+  MessageSquare,
+  Search,
+  Trash2,
+  Users,
+  MessageCircle,
+  TrendingUp,
+  ExternalLink,
+  ShieldCheck,
+  AlertCircle
+} from "lucide-react"
+import prisma from "@/lib/prisma"
+import Link from "next/link"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Mock data
-const mockPosts = [
-  { id: "1", title: "Dúvida sobre Present Perfect", author: "João Silva", type: "Question", responses: 5, status: "active", date: "2 horas atrás" },
-  { id: "2", title: "Material extra para A2", author: "Maria Santos", type: "Discussion", responses: 12, status: "active", date: "1 dia atrás" },
-  { id: "3", title: "Erro na lição 4", author: "Pedro Costa", type: "Bug Report", responses: 2, status: "resolved", date: "3 dias atrás" },
-  { id: "4", title: "Sugestão de funcionalidade", author: "Ana Oliveira", type: "Suggestion", responses: 8, status: "active", date: "1 semana atrás" },
-  { id: "5", title: "Conteúdo inapropriado", author: "Carlos Ferreira", type: "Discussion", responses: 0, status: "flagged", date: "2 semanas atrás" },
-]
+export default async function AdminForumPage() {
+  const [posts, stats] = await Promise.all([
+    prisma.forumPost.findMany({
+      include: {
+        author: true,
+        _count: {
+          select: { replies: true }
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    }),
+    prisma.$transaction([
+      prisma.forumPost.count(),
+      prisma.forumReply.count(),
+      prisma.user.count({ 
+        where: { 
+          OR: [
+            { forumPosts: { some: {} } },
+            { forumReplies: { some: {} } }
+          ]
+        }
+      })
+    ])
+  ])
 
-export default function AdminForumPage() {
+  const [totalPosts, totalReplies, activeContributors] = stats
+
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-10 pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gerenciar Fórum</h1>
-          <p className="text-muted-foreground">Modere discussões e gerencie tópicos do fórum</p>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Tópicos Ativos</p>
-          <p className="text-2xl font-bold">{mockPosts.filter(p => p.status === "active").length}</p>
-        </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Reportados</p>
-          <p className="text-2xl font-bold text-destructive">
-            {mockPosts.filter(p => p.status === "flagged").length}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Total de Respostas</p>
-          <p className="text-2xl font-bold">
-            {mockPosts.reduce((sum, p) => sum + p.responses, 0)}
-          </p>
-        </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Resolvidos</p>
-          <p className="text-2xl font-bold text-green-600">
-            {mockPosts.filter(p => p.status === "resolved").length}
+          <h1 className="text-4xl font-black font-display tracking-tight text-foreground flex items-center gap-3">
+            <MessageSquare className="w-10 h-10 text-primary" />
+            Moderação do Fórum
+          </h1>
+          <p className="text-muted-foreground mt-2 font-medium italic">
+            Gerencie discussões, modere usuários e monitore o engajamento comunitário.
           </p>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar tópicos..." className="pl-10" />
+      {/* Stats - Premium Vibrant Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-primary">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total de Posts</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black">{totalPosts}</h3>
+            <MessageSquare className="w-5 h-5 text-primary/40" />
+          </div>
         </div>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="Question">Dúvida</SelectItem>
-            <SelectItem value="Discussion">Discussão</SelectItem>
-            <SelectItem value="Bug Report">Bug</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="active">Ativo</SelectItem>
-            <SelectItem value="resolved">Resolvido</SelectItem>
-            <SelectItem value="flagged">Reportado</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-blue-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total Respostas</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-blue-600">{totalReplies}</h3>
+            <MessageCircle className="w-5 h-5 text-blue-500/40" />
+          </div>
+        </div>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-emerald-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Contribuidores</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-emerald-600">{activeContributors}</h3>
+            <Users className="w-5 h-5 text-emerald-500/40" />
+          </div>
+        </div>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-orange-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Atividade (7d)</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-orange-600">Alta</h3>
+            <TrendingUp className="w-5 h-5 text-orange-500/40" />
+          </div>
+        </div>
       </div>
 
-      {/* Posts Table */}
-      <div className="rounded-md border">
+      {/* Forum Posts Table */}
+      <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Tópico</TableHead>
-              <TableHead>Autor</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Respostas</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="font-bold pl-6 py-4">Tópico / Autor</TableHead>
+              <TableHead className="font-bold">Categoria</TableHead>
+              <TableHead className="font-bold text-center">Respostas</TableHead>
+              <TableHead className="font-bold text-center">Votos</TableHead>
+              <TableHead className="font-bold pr-6">Data</TableHead>
+              <TableHead className="text-right pr-6 font-bold">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockPosts.map((post) => (
-              <TableRow key={post.id}>
-                <TableCell>
-                  <div className="font-medium line-clamp-1">{post.title}</div>
-                </TableCell>
-                <TableCell>{post.author}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{post.type}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <MessageSquare className="h-3 w-3 text-muted-foreground" />
-                    {post.responses}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={
-                    post.status === "active" ? "default" :
-                    post.status === "resolved" ? "secondary" :
-                    "destructive"
-                  }>
-                    {post.status === "active" ? "Ativo" :
-                     post.status === "resolved" ? "Resolvido" : "Reportado"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">{post.date}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        Ver Tópico
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Ban className="mr-2 h-4 w-4" />
-                        Trancar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remover
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+            {posts.length > 0 ? posts.map((post) => (
+               <TableRow key={post.id} className="group hover:bg-accent/50 transition-colors">
+                  <TableCell className="pl-6 py-4">
+                    <div className="flex items-center gap-3">
+                       <Avatar className="h-9 w-9 border-2 border-background group-hover:scale-110 transition-transform">
+                         <AvatarImage src={post.author.image || ""} />
+                         <AvatarFallback className="font-black bg-primary/10 text-primary">{post.author.name?.charAt(0) || "U"}</AvatarFallback>
+                       </Avatar>
+                       <div className="min-w-0">
+                          <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{post.title}</p>
+                          <p className="text-[10px] text-muted-foreground truncate italic">por <span className="text-foreground font-semibold">{post.author.name}</span></p>
+                       </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="font-black text-[10px] uppercase tracking-wider px-2 py-0.5 border-primary/20 bg-primary/5 text-primary-foreground/70">
+                      {post.category}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-bold">{post._count.replies}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      <span className="text-sm font-bold">{post.upvotes}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs font-bold text-muted-foreground">
+                    {new Date(post.createdAt).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <div className="flex justify-end gap-2">
+                       <Button asChild variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary rounded-xl transition-all" title="Ver no Fórum">
+                         <Link href={`/student/forum/${post.id}`}>
+                           <ExternalLink className="h-4 w-4" />
+                         </Link>
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-red-50 rounded-xl transition-all" title="Eliminar Post">
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </div>
+                  </TableCell>
+               </TableRow>
+            )) : (
+              <TableRow>
+                 <TableCell colSpan={6} className="py-20 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
+                       <AlertCircle className="w-8 h-8 opacity-20" />
+                       <p className="font-bold text-sm">Nenhum post encontrado no fórum.</p>
+                    </div>
+                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

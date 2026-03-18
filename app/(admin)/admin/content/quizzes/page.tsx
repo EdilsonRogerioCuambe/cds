@@ -16,141 +16,174 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { ClipboardCheck, Edit, Plus, Search, Trash2 } from "lucide-react"
+import {
+  ClipboardCheck,
+  Edit,
+  Plus,
+  Search,
+  Trash2,
+  BookOpen,
+  Trophy,
+  Users,
+  Layout,
+  ExternalLink
+} from "lucide-react"
+import prisma from "@/lib/prisma"
+import Link from "next/link"
 
-// Mock data
-const mockQuizzes = [
-  { id: "1", title: "Greetings Quiz", course: "A1 Beginner", questions: 10, avgScore: 85, completions: 156, status: "published" },
-  { id: "2", title: "Numbers Test", course: "A1 Beginner", questions: 15, avgScore: 78, completions: 142, status: "published" },
-  { id: "3", title: "Present Simple Assessment", course: "A2 Elementary", questions: 20, avgScore: 72, completions: 98, status: "published" },
-  { id: "4", title: "Vocabulary Challenge", course: "B1 Intermediate", questions: 25, avgScore: 0, completions: 0, status: "draft" },
-  { id: "5", title: "Grammar Final Exam", course: "B2 Upper Intermediate", questions: 30, avgScore: 68, completions: 45, status: "published" },
-]
+export default async function AdminQuizzesPage() {
+  const quizzes = await prisma.quiz.findMany({
+    include: {
+      lesson: {
+        include: {
+          module: {
+            include: {
+              course: true
+            }
+          }
+        }
+      },
+      attempts: true
+    },
+    orderBy: { id: "desc" }
+  })
 
-export default function AdminQuizzesPage() {
+  const stats = {
+    total: quizzes.length,
+    totalQuestions: quizzes.reduce((sum, q) => {
+      const qs = Array.isArray(q.questions) ? q.questions.length : 0
+      return sum + qs
+    }, 0),
+    totalAttempts: quizzes.reduce((sum, q) => sum + q.attempts.length, 0),
+    avgScore: quizzes.length > 0 ? Math.round(quizzes.reduce((sum, q) => {
+      if (q.attempts.length === 0) return sum
+      const avg = q.attempts.reduce((s, a) => s + a.score, 0) / q.attempts.length
+      return sum + avg
+    }, 0) / quizzes.filter(q => q.attempts.length > 0).length || 0) : 0
+  }
+
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-10 pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Gerenciar Quizzes</h1>
-          <p className="text-muted-foreground">Crie e gerencie quizzes e avaliações</p>
+          <h1 className="text-4xl font-black font-display tracking-tight text-foreground flex items-center gap-3">
+            <ClipboardCheck className="w-10 h-10 text-primary" />
+            Gerenciar Quizzes
+          </h1>
+          <p className="text-muted-foreground mt-2 font-medium italic">
+            Configuração e análise de desempenho das avaliações da plataforma.
+          </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Quiz
+        <Button asChild className="rounded-xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+          <Link href="/teacher/courses">
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Quiz
+          </Link>
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Total de Quizzes</p>
-          <p className="text-2xl font-bold">{mockQuizzes.length}</p>
+      {/* Stats - Premium Vibrant Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-primary">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Total de Quizzes</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black">{stats.total}</h3>
+            <Layout className="w-5 h-5 text-primary/40" />
+          </div>
         </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Publicados</p>
-          <p className="text-2xl font-bold text-green-600">
-            {mockQuizzes.filter(q => q.status === "published").length}
-          </p>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-blue-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Questões Totais</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-blue-600">{stats.totalQuestions}</h3>
+            <ClipboardCheck className="w-5 h-5 text-blue-500/40" />
+          </div>
         </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Total de Questões</p>
-          <p className="text-2xl font-bold">
-            {mockQuizzes.reduce((sum, q) => sum + q.questions, 0)}
-          </p>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-emerald-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Tentativas</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-emerald-600">{stats.totalAttempts}</h3>
+            <Users className="w-5 h-5 text-emerald-500/40" />
+          </div>
         </div>
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Pontuação Média</p>
-          <p className="text-2xl font-bold">
-            {Math.round(
-              mockQuizzes.filter(q => q.completions > 0).reduce((sum, q) => sum + q.avgScore, 0) /
-              mockQuizzes.filter(q => q.completions > 0).length
-            )}%
-          </p>
+        <div className="bg-card rounded-3xl border p-6 hover:shadow-xl transition-all border-l-4 border-l-orange-500">
+          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Média Global</p>
+          <div className="flex items-end justify-between mt-1">
+            <h3 className="text-3xl font-black text-orange-600">{stats.avgScore}%</h3>
+            <Trophy className="w-5 h-5 text-orange-500/40" />
+          </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar quizzes..." className="pl-10" />
-        </div>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Curso" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os cursos</SelectItem>
-            <SelectItem value="A1">A1 Beginner</SelectItem>
-            <SelectItem value="A2">A2 Elementary</SelectItem>
-            <SelectItem value="B1">B1 Intermediate</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select defaultValue="all">
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="published">Publicado</SelectItem>
-            <SelectItem value="draft">Rascunho</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Quizzes Table */}
-      <div className="rounded-md border">
+      {/* Table Section */}
+      <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead>Título</TableHead>
-              <TableHead>Curso</TableHead>
-              <TableHead>Questões</TableHead>
-              <TableHead>Pontuação Média</TableHead>
-              <TableHead>Conclusões</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="font-bold pl-6 py-4">Quiz / Lição</TableHead>
+              <TableHead className="font-bold">Curso</TableHead>
+              <TableHead className="font-bold text-center">Questões</TableHead>
+              <TableHead className="font-bold text-center">Média</TableHead>
+              <TableHead className="font-bold text-center">Completos</TableHead>
+              <TableHead className="text-right pr-6 font-bold">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockQuizzes.map((quiz) => (
-              <TableRow key={quiz.id}>
-                <TableCell className="font-medium">{quiz.title}</TableCell>
-                <TableCell>{quiz.course}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">
-                    <ClipboardCheck className="mr-1 h-3 w-3" />
-                    {quiz.questions}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {quiz.completions > 0 ? (
-                    <span className={quiz.avgScore >= 70 ? "text-green-600 font-semibold" : "text-orange-600 font-semibold"}>
-                      {quiz.avgScore}%
+            {quizzes.length > 0 ? quizzes.map((quiz) => {
+              const quizAvg = quiz.attempts.length > 0 
+                ? Math.round(quiz.attempts.reduce((s, a) => s + a.score, 0) / quiz.attempts.length) 
+                : 0
+              const questionCount = Array.isArray(quiz.questions) ? quiz.questions.length : 0
+
+              return (
+                <TableRow key={quiz.id} className="group hover:bg-accent/50 transition-colors">
+                  <TableCell className="pl-6 py-4">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <ClipboardCheck className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{quiz.title}</p>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter truncate">
+                            {quiz.lesson?.title || "Standalone"}
+                          </p>
+                        </div>
+                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm font-bold">{quiz.lesson?.module.course.title || "---"}</span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="font-black text-[10px]">{questionCount}</Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`text-sm font-black ${quizAvg >= 70 ? "text-emerald-600" : quizAvg > 0 ? "text-orange-600" : "text-muted-foreground"}`}>
+                      {quizAvg > 0 ? `${quizAvg}%` : "N/A"}
                     </span>
-                  ) : (
-                    <span className="text-muted-foreground">N/A</span>
-                  )}
-                </TableCell>
-                <TableCell>{quiz.completions}</TableCell>
-                <TableCell>
-                  <Badge variant={quiz.status === "published" ? "default" : "secondary"}>
-                    {quiz.status === "published" ? "Publicado" : "Rascunho"}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="text-sm font-bold">{quiz.attempts.length}</span>
+                  </TableCell>
+                  <TableCell className="text-right pr-6">
+                    <div className="flex justify-end gap-2">
+                       <Button asChild variant="ghost" size="icon" className="h-9 w-9 hover:bg-primary/10 hover:text-primary rounded-xl transition-all">
+                         <Link href={`/admin/courses/${quiz.lesson?.module.course.id}/modules/${quiz.lesson?.moduleId}/lessons/${quiz.lesson?.id}/edit?tab=quizzes`}>
+                           <Edit className="h-4 w-4" />
+                         </Link>
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-red-50 rounded-xl transition-all">
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            }) : (
+              <TableRow>
+                <TableCell colSpan={6} className="py-20 text-center text-muted-foreground italic">
+                  Nenhum quiz encontrado.
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </div>

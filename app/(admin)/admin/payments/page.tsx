@@ -9,7 +9,18 @@ import {
     TableRow
 } from "@/components/ui/table"
 import prisma from "@/lib/prisma"
-import { CreditCard, DollarSign, Repeat, TrendingUp, User } from "lucide-react"
+import {
+  CreditCard,
+  DollarSign,
+  Repeat,
+  TrendingUp,
+  User,
+  ArrowUpRight,
+  ArrowDownRight,
+  Wallet,
+  Calendar
+} from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export default async function AdminPaymentsPage() {
   const [payments, subscriptions] = await Promise.all([
@@ -25,145 +36,204 @@ export default async function AdminPaymentsPage() {
     })
   ])
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('pt-MZ', {
+      style: 'currency',
+      currency: 'MZN',
+      minimumFractionDigits: 0
+    }).format(amount).replace("MZN", "MT")
+  }
+
   const totalRevenue = payments
     .filter(p => p.status === "APPROVED")
     .reduce((sum, p) => sum + p.amount, 0)
 
   const activeSubscriptions = subscriptions.filter(s => s.status === "authorized").length
+  const pendingPayments = payments.filter(p => p.status === "PENDING").length
 
   return (
-    <div className="space-y-8 p-6">
-      <div>
-        <h1 className="text-3xl font-bold">Financeiro & Assinaturas</h1>
-        <p className="text-muted-foreground">Monitore transações, faturamento e assinaturas ativas</p>
+    <div className="space-y-10 pb-10">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-black font-display tracking-tight text-foreground flex items-center gap-3">
+            <Wallet className="w-10 h-10 text-primary" />
+            Financeiro
+          </h1>
+          <p className="text-muted-foreground mt-1 font-medium italic">
+            Gestão de transações, faturamento e subscrições recorrentes.
+          </p>
+        </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-gradient-to-br from-green-50 to-white dark:from-green-950 dark:to-background border-green-100 dark:border-green-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-400">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalRevenue)}
+      {/* Stats Cards - Premium Gradients */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-emerald-500/10 to-transparent p-6 transition-all hover:shadow-2xl hover:shadow-emerald-500/10 duration-500">
+          <div className="flex justify-between items-start">
+            <div className="space-y-4">
+              <div className="p-3 bg-emerald-500/20 rounded-2xl w-fit">
+                <DollarSign className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-emerald-600/70">Receita Total</p>
+                <h3 className="text-3xl font-black mt-1 text-foreground">{formatCurrency(totalRevenue)}</h3>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Total aprovado na plataforma</p>
-          </CardContent>
-        </Card>
+            <div className="p-2 bg-emerald-500/10 rounded-full">
+              <ArrowUpRight className="w-4 h-4 text-emerald-600" />
+            </div>
+          </div>
+        </div>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-background border-blue-100 dark:border-blue-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
-            <Repeat className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeSubscriptions}</div>
-            <p className="text-xs text-muted-foreground">Cobranças recorrentes mensais</p>
-          </CardContent>
-        </Card>
+        <div className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-blue-500/10 to-transparent p-6 transition-all hover:shadow-2xl hover:shadow-blue-500/10 duration-500">
+          <div className="flex justify-between items-start">
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-500/20 rounded-2xl w-fit">
+                <Repeat className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-blue-600/70">Assinaturas Ativas</p>
+                <h3 className="text-3xl font-black mt-1 text-foreground">{activeSubscriptions}</h3>
+              </div>
+            </div>
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+            </div>
+          </div>
+        </div>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-white dark:from-purple-950 dark:to-background border-purple-100 dark:border-purple-900">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Novos Pagamentos</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">{payments.length}</div>
-            <p className="text-xs text-muted-foreground">Total de transações (incluindo falhas)</p>
-          </CardContent>
-        </Card>
+        <div className="group relative overflow-hidden rounded-3xl border bg-gradient-to-br from-amber-500/10 to-transparent p-6 transition-all hover:shadow-2xl hover:shadow-amber-500/10 duration-500">
+          <div className="flex justify-between items-start">
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-500/20 rounded-2xl w-fit">
+                <CreditCard className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-amber-600/70">Pendentes</p>
+                <h3 className="text-3xl font-black mt-1 text-foreground">{pendingPayments}</h3>
+              </div>
+            </div>
+            <div className="p-2 bg-amber-500/10 rounded-full">
+               <Calendar className="w-4 h-4 text-amber-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Recent Transactions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Transações Recentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="grid gap-8 lg:grid-cols-5">
+        {/* Recent Transactions - 3/5 width */}
+        <div className="lg:col-span-3 space-y-6">
+          <div className="flex items-center justify-between px-2">
+             <h2 className="text-2xl font-black font-display text-foreground flex items-center gap-2">
+               <TrendingUp className="w-6 h-6 text-primary" />
+               Transações Recentes
+             </h2>
+          </div>
+          <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data</TableHead>
+                  <TableHead className="font-bold pl-6 py-4">Utilizador</TableHead>
+                  <TableHead className="font-bold">Valor</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold pr-6">Data</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {payments.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.user?.name || "Sem Nome"}</TableCell>
-                    <TableCell>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.amount)}</TableCell>
+                  <TableRow key={p.id} className="group hover:bg-accent/50 transition-colors">
+                    <TableCell className="pl-6 py-4">
+                      <div className="flex items-center gap-3">
+                         <Avatar className="h-9 w-9 border-2 border-background group-hover:scale-110 transition-transform">
+                           <AvatarImage src={p.user?.image || ""} />
+                           <AvatarFallback className="font-black bg-primary/10 text-primary">{p.user?.name?.charAt(0) || "U"}</AvatarFallback>
+                         </Avatar>
+                         <div className="min-w-0">
+                           <p className="text-sm font-bold truncate">{p.user?.name || "Sem Nome"}</p>
+                           <p className="text-[10px] text-muted-foreground truncate">{p.user?.email}</p>
+                         </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-black text-foreground">
+                      {formatCurrency(p.amount)}
+                    </TableCell>
                     <TableCell>
-                      <Badge variant={p.status === "APPROVED" ? "default" : p.status === "REJECTED" ? "destructive" : "secondary"}>
+                      <Badge
+                        variant={p.status === "APPROVED" ? "default" : p.status === "REJECTED" ? "destructive" : "secondary"}
+                        className="font-black text-[10px] uppercase tracking-wider px-2"
+                      >
                         {p.status === "APPROVED" ? "Aprovado" : p.status === "REJECTED" ? "Recusado" : "Pendente"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(p.createdAt).toLocaleDateString()}
+                    <TableCell className="text-xs font-bold text-muted-foreground pr-6">
+                      {new Date(p.createdAt).toLocaleDateString('pt-BR')}
                     </TableCell>
                   </TableRow>
                 ))}
                 {payments.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                      Nenhum pagamento encontrado.
+                    <TableCell colSpan={4} className="text-center py-20 text-muted-foreground italic">
+                      Nenhuma transação encontrada.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Active Subscriptions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Repeat className="h-5 w-5" />
-              Assinaturas Ativas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* Active Subscriptions - 2/5 width */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between px-2">
+             <h2 className="text-2xl font-black font-display text-foreground flex items-center gap-2">
+               <Repeat className="w-6 h-6 text-blue-500" />
+               Subscrições
+             </h2>
+          </div>
+          <div className="rounded-3xl border bg-card overflow-hidden shadow-sm">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/30">
                 <TableRow>
-                  <TableHead>Assinante</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Próxima Cobrança</TableHead>
+                  <TableHead className="font-bold pl-6 py-4">Assinante</TableHead>
+                  <TableHead className="font-bold">Status</TableHead>
+                  <TableHead className="font-bold pr-6">Renovação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subscriptions.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.user?.name || "Sem Nome"}</TableCell>
-                    <TableCell>
-                      <Badge variant={s.status === "authorized" ? "outline" : "secondary"}>
-                        {s.status === "authorized" ? "Ativa" : "Pausada/Canc"}
-                      </Badge>
+                  <TableRow key={s.id} className="group hover:bg-accent/50 transition-colors">
+                    <TableCell className="pl-6 py-4">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center font-black text-blue-600 text-xs">
+                           {s.user?.name?.charAt(0) || "U"}
+                         </div>
+                         <p className="text-sm font-bold truncate">{s.user?.name || "Sem Nome"}</p>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${s.status === "authorized" ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">
+                          {s.status === "authorized" ? "Ativa" : "Inativa"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs font-bold text-muted-foreground pr-6">
                       {s.nextBillingDate ? new Date(s.nextBillingDate).toLocaleDateString() : "N/A"}
                     </TableCell>
                   </TableRow>
                 ))}
                 {subscriptions.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                      Nenhuma assinatura encontrada.
+                    <TableCell colSpan={3} className="text-center py-20 text-muted-foreground italic">
+                      Nenhuma assinatura.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   )
