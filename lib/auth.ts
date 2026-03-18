@@ -77,6 +77,11 @@ export async function requireRole(allowedRoles: UserRole | UserRole[]): Promise<
     redirect("/unauthorized")
   }
 
+  // Check for PENDING status for non-admin roles
+  if (user.status === UserStatus.PENDING && user.role !== UserRole.ADMIN) {
+    redirect("/auth/pending")
+  }
+
   return user
 }
 

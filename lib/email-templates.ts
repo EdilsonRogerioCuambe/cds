@@ -63,6 +63,7 @@ export const getWelcomeEmail = (name: string) => baseTemplate(`
   </ul>
   <a href="#" class="button">Acessar meu Dashboard</a>
 `);
+
 export const getOTPEmailTemplate = (code: string, typeLabel: string) => baseTemplate(`
   <h2 style="color: ${DARK_BASE}; margin-top: 0;">${typeLabel}</h2>
   <p>Seu código de 6 dígitos é:</p>
@@ -80,4 +81,24 @@ export const getEnrollmentEmail = (name: string, courseTitle: string) => baseTem
     <a href="${process.env.NEXT_PUBLIC_APP_URL}/student/courses" class="button">Começar a Estudar Agora</a>
   </div>
   <p style="font-size: 14px; color: #64748b;">Se precisar de ajuda, entre em contato com nosso suporte.</p>
+`);
+
+export const getTeacherApprovalEmail = (name: string) => baseTemplate(`
+  <h2 style="color: ${DARK_BASE}; margin-top: 0;">Sua Conta foi Aprovada!</h2>
+  <p>Olá, ${name}! Temos o prazer de informar que seu perfil de instrutor na <strong>${APP_NAME}</strong> foi aprovado por nossa equipe administrativa.</p>
+  <p>Agora você já pode acessar seu painel de professor para gerenciar seus cursos e alunos.</p>
+  <div style="margin: 30px 0;">
+    <a href="${process.env.NEXT_PUBLIC_APP_URL}/teacher/dashboard" class="button">Acessar Painel do Professor</a>
+  </div>
+  <p style="font-size: 14px; color: #64748b;">Desejamos muito sucesso em suas aulas!</p>
+`);
+
+export const getTeacherInviteEmail = (name: string, url: string) => baseTemplate(`
+  <h2 style="color: ${DARK_BASE}; margin-top: 0;">Convite para Instrutor</h2>
+  <p>Olá, ${name}! Você foi convidado para se tornar um instrutor na plataforma <strong>${APP_NAME}</strong>.</p>
+  <p>Para começar, precisamos que você defina sua senha e complete seu perfil profissional clicando no botão abaixo:</p>
+  <div style="margin: 30px 0;">
+    <a href="${url}" class="button">Completar meu Cadastro</a>
+  </div>
+  <p style="font-size: 14px; color: #64748b;">Este link é pessoal e não deve ser compartilhado.</p>
 `);

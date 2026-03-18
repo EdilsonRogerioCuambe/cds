@@ -1,6 +1,7 @@
 "use server"
 
 import { auth } from "@/lib/auth-server"
+import prisma from "@/lib/prisma"
 import { UserRole } from "@/types/user"
 import { isValidPhoneNumber } from "libphonenumber-js"
 import { headers } from "next/headers"
@@ -223,4 +224,103 @@ export async function resendVerificationAction(email: string) {
     console.error("[ResendAction] Erro no catch:", error.message || error);
     return { error: translateError(error.message) || "Falha ao reenviar o e-mail" };
   }
+}
+
+/**
+ * Server Action to Approve a Teacher
+ */
+import { getTeacherApprovalEmail, getTeacherInviteEmail } from "@/lib/email-templates"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export async function approveTeacherAction(teacherId: string) {
+    // 1. Verify if the current user is an admin (Security)
+    const session = await auth.api.getSession({
+        headers: await headers()
+    })
+
+    if (!session || session.user.role !== "ADMIN") {
+        return { error: "Não autorizado" }
+    }
+
+    try {
+        const user = await prisma.user.update({
+            where: { id: teacherId },
+            data: { status: "ACTIVE" }
+        })
+
+        if (!user) return { error: "Usuário não encontrado" }
+
+        // Send Approval Email
+        await resend.emails.send({
+            from: "CDS <contato@ubuntuweblab.site>",
+            to: user.email,
+            subject: "Sua conta de instrutor foi aprovada! - CDS",
+            html: getTeacherApprovalEmail(user.name || "Instrutor")
+        })
+
+        return { success: true }
+    } catch (error: any) {
+        console.error("[ApproveAction] Erro:", error)
+        return { error: "Falha ao aprovar instrutor" }
+    }
+}
+
+/**
+ * Server Action to Invite a Teacher
+ */
+export async function inviteTeacherAction(email: string, name: string) {
+    const session = await auth.api.getSession({
+        headers: await headers()
+    })
+
+    if (!session || session.user.role !== "ADMIN") {
+        return { error: "Não autorizado" }
+    }
+
+    try {
+        // Create user via Better Auth or Prisma directly?
+        // Better Auth is better for session/account consistency
+        // But we want to send a custom invite link for onboarding
+        
+        const existing = await prisma.user.findUnique({ where: { email } })
+        if (existing) return { error: "Este email já está cadastrado" }
+
+        const user = await prisma.user.create({
+            data: {
+                email,
+                name,
+                role: "TEACHER",
+                status: "PENDING",
+                emailVerified: true // They will verify by setting password
+            }
+        })
+
+        // Generate a reset password / setup link
+        // Use sendVerificationEmail or similar if we want them to set password
+        // Actually, for invitations, we can use forgetPassword if enabled
+        // If not, we'll just send them to the login page with a "forgot password" direction
+        // But let's try to use the correct Better Auth API
+        
+        // Trigger the forgotten password flow to send an OTP
+        await auth.api.forgetPasswordEmailOTP({
+            body: { email }
+        })
+
+        const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/onboarding?email=${encodeURIComponent(email)}`
+
+        // Send Invite Email
+        await resend.emails.send({
+            from: "CDS <contato@ubuntuweblab.site>",
+            to: email,
+            subject: "Convite para Instrutor - CDS",
+            html: getTeacherInviteEmail(name, url)
+        })
+
+        return { success: true }
+    } catch (error: any) {
+        console.error("[InviteAction] Erro:", error)
+        return { error: "Falha ao enviar convite" }
+    }
 }
