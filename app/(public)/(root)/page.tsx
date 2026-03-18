@@ -27,51 +27,59 @@ export default function Page() {
 
       <main className="flex-1 flex flex-col gap-24 lg:gap-32 pb-20">
         {/* Hero Section */}
-        <section className="relative px-4 lg:px-8 max-w-7xl mx-auto w-full pt-8 lg:pt-20">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <section className="relative px-4 lg:px-8 max-w-7xl mx-auto w-full pt-8 lg:pt-20 overflow-hidden">
+          {/* Animated Mesh Gradients */}
+          <div className="absolute top-0 right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse pointer-events-none" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#10D79E]/15 rounded-full blur-[100px] pointer-events-none" />
+
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10">
             <div className="flex flex-col gap-6 lg:gap-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full bg-primary/10 text-primary text-xs lg:text-sm font-bold w-fit animate-in fade-in slide-in-from-left duration-500">
+              <div className="inline-flex items-center gap-2 px-3 py-1 lg:px-4 lg:py-1.5 rounded-full bg-primary/10 text-primary text-xs lg:text-sm font-bold w-fit animate-in fade-in slide-in-from-left duration-700">
                 <Zap className="w-3.5 h-3.5 lg:w-4 lg:h-4 fill-current" />
-                TRANSFORM SEU INGLÊS HOJE
+                TRANSFORME SEU INGLÊS HOJE
               </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold font-display tracking-tighter text-foreground text-balance leading-[0.95] text-gradient">
-                Connect your future to the <span className="text-primary italic">world.</span>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black font-display tracking-tighter text-foreground text-balance leading-[0.9] lg:leading-[0.85]">
+                Connect your future to the <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#10D79E] italic">world.</span>
               </h1>
-              <p className="text-lg lg:text-2xl text-muted-foreground max-w-xl leading-relaxed">
-                Connect Digital School combina tecnologia de ponta com uma metodologia gamificada para você dominar o inglês com confiança.
+              <p className="text-lg lg:text-2xl text-muted-foreground max-w-xl leading-relaxed font-medium">
+                Connect Digital School combina tecnologia de ponta com uma metodologia gamificada para você dominar o inglês com confiança real.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <Button asChild size="lg" className="rounded-full px-8 py-6 lg:px-10 lg:py-7 text-lg lg:text-xl font-bold gradient-brand shadow-2xl shadow-primary/20 hover:scale-105 transition-transform w-full sm:w-auto">
+                <Button asChild size="lg" className="rounded-2xl px-8 py-6 lg:px-10 lg:py-8 text-lg lg:text-xl font-bold gradient-brand shadow-2xl shadow-primary/30 hover:scale-105 transition-all w-full sm:w-auto">
                   <Link href="/auth/register">
                     Começar Agora <ArrowRight className="ml-2 w-5 h-5 lg:w-6 lg:h-6" />
                   </Link>
                 </Button>
-                <Button variant="outline" size="lg" className="rounded-full px-8 py-6 lg:px-10 lg:py-7 text-lg lg:text-xl border-2 w-full sm:w-auto">
+                <Button variant="outline" size="lg" className="rounded-2xl px-8 py-6 lg:px-10 lg:py-8 text-lg lg:text-xl border-2 hover:bg-muted/50 w-full sm:w-auto">
                    Ver Níveis
                 </Button>
               </div>
             </div>
 
-            <div className="relative aspect-square lg:aspect-[4/3] rounded-3xl lg:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-primary/10 border border-border/50 group mt-8 lg:mt-0">
-              <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 via-transparent to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
+            <div className="relative aspect-square lg:aspect-[4/3] rounded-[2rem] lg:rounded-[3rem] overflow-hidden shadow-2xl shadow-primary/10 border border-white/10 group mt-8 lg:mt-0">
+               {/* Decorative border glow */}
+              <div className="absolute inset-x-0 -bottom-2 h-px bg-gradient-to-r from-transparent via-primary to-transparent opacity-50 group-hover:opacity-100 transition-opacity blur-sm" />
+              
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#132747]/80 via-transparent to-transparent z-10 opacity-60 group-hover:opacity-40 transition-opacity" />
               <img
-                src={faker.image.url()}
+                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200"
                 alt="Connect Students"
-                className="object-cover w-full h-full scale-105 group-hover:scale-100 transition-transform duration-700"
+                className="object-cover w-full h-full scale-105 group-hover:scale-100 transition-transform duration-1000"
               />
               {/* Floating Content Card */}
-              <div className="absolute bottom-6 left-6 right-6 lg:bottom-10 lg:left-10 lg:right-10 glass p-5 lg:p-8 rounded-2xl lg:rounded-[2rem] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom duration-700 delay-300">
+              <div className="absolute bottom-6 left-6 right-6 lg:bottom-10 lg:left-10 lg:right-10 glass p-5 lg:p-8 rounded-2xl lg:rounded-[2.5rem] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom duration-1000 delay-300">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 lg:gap-5">
-                    <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl gradient-brand flex items-center justify-center text-white shadow-xl">
-                      <PlayCircle className="w-6 h-6 lg:w-9 lg:h-9" />
+                  <div className="flex items-center gap-4 lg:gap-6">
+                    <div className="w-12 h-12 lg:w-20 lg:h-20 rounded-xl lg:rounded-[2rem] gradient-brand flex items-center justify-center text-white shadow-xl">
+                      <PlayCircle className="w-6 h-6 lg:w-10 lg:h-10" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm lg:text-lg text-foreground">Interactive Learning</p>
-                      <p className="text-[10px] lg:text-sm text-muted-foreground">Level B1 · Unit 04</p>
+                      <p className="font-bold text-base lg:text-xl text-foreground">Aulas Interativas</p>
+                      <p className="text-[10px] lg:text-sm text-muted-foreground font-medium opacity-80 uppercase tracking-widest">Nível B1 · Unidade 04</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 lg:gap-2 px-2.5 py-1 lg:px-4 lg:py-2 rounded-full bg-primary/10 text-primary font-bold text-[10px] lg:text-sm shrink-0">
+                  <div className="flex items-center gap-1.5 lg:gap-2 px-3 py-1.5 lg:px-5 lg:py-2.5 rounded-full bg-primary/10 text-primary font-bold text-[10px] lg:text-xs shrink-0 tracking-widest uppercase border border-primary/20">
                     Live Now
                   </div>
                 </div>
@@ -205,11 +213,11 @@ export default function Page() {
 
             <div className="relative group">
                {/* Floating Glow Indicator */}
-               <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary/20 backdrop-blur-md border border-primary/30 px-4 py-1.5 rounded-full z-20 shadow-lg shadow-primary/10">
-                  <span className="text-[10px] lg:text-xs font-bold text-primary tracking-widest uppercase">Live Platform Preview</span>
+               <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-primary/20 backdrop-blur-md border border-primary/30 px-6 py-2 rounded-full z-20 shadow-xl shadow-primary/20">
+                  <span className="text-[10px] lg:text-xs font-black text-primary tracking-[0.3em] uppercase">Plataforma em Tempo Real</span>
                </div>
-
-              <div className="relative glass rounded-2xl lg:rounded-[2.5rem] border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.3)] overflow-hidden bg-background/40 backdrop-blur-2xl transition-all duration-700 group-hover:border-primary/40">
+ 
+              <div className="relative glass rounded-[2rem] lg:rounded-[3.5rem] border border-white/20 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden bg-background/40 backdrop-blur-3xl transition-all duration-700 group-hover:border-primary/50">
                 <div className="h-8 lg:h-12 bg-muted/20 border-b border-white/10 flex items-center px-4 gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 lg:w-3 lg:h-3 rounded-full bg-red-500/80 shadow-inner" />
@@ -406,7 +414,8 @@ function StudentDashboardPreviewSegment() {
           enrolled: 1200,
           locked: false,
           isEnrolled: true,
-          published: true
+          published: true,
+          price: 0
         },
         {
           id: "c2",
@@ -419,7 +428,8 @@ function StudentDashboardPreviewSegment() {
           enrolled: 850,
           locked: false,
           isEnrolled: false,
-          published: true
+          published: true,
+          price: 0
         },
         {
           id: "c3",
@@ -432,7 +442,8 @@ function StudentDashboardPreviewSegment() {
           enrolled: 400,
           locked: false,
           isEnrolled: false,
-          published: true
+          published: true,
+          price: 0
         }
       ]}
     />
