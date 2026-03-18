@@ -18,7 +18,7 @@ export default async function TeacherDashboardPage() {
     getTeacherStats(user.id)
   ])
 
-  const { stats, distribution, performance, topStudents } = dashboardData
+  const { stats, distribution, lessonTypeDistribution, performance, topStudents } = dashboardData
 
   return (
     <TeacherDashboard
@@ -26,6 +26,7 @@ export default async function TeacherDashboardPage() {
       stats={stats}
       performance={performance}
       distribution={distribution}
+      lessonTypeDistribution={lessonTypeDistribution}
       courses={courses}
       forumPosts={forumPosts}
       topStudents={topStudents}

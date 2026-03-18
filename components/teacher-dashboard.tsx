@@ -39,6 +39,7 @@ interface TeacherDashboardProps {
   stats: any
   performance: any[]
   distribution: any[]
+  lessonTypeDistribution: any[]
   courses: any[]
   forumPosts: ForumPost[]
   topStudents: any[]
@@ -93,6 +94,7 @@ export function TeacherDashboard({
   stats,
   performance,
   distribution,
+  lessonTypeDistribution,
   courses,
   forumPosts,
   topStudents,
@@ -176,8 +178,8 @@ export function TeacherDashboard({
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2">
+      <div className="grid grid-cols-1 mb-6">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold font-display flex items-center gap-2 text-foreground">
               <TrendingUp className="w-4 h-4 text-primary" />
@@ -229,7 +231,9 @@ export function TeacherDashboard({
             </ResponsiveContainer>
           </CardContent>
         </Card>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold font-display text-foreground">
@@ -278,6 +282,60 @@ export function TeacherDashboard({
                     style={{ backgroundColor: item.color }}
                   />
                   {item.level}: {item.students}
+                </span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold font-display text-foreground">
+              Content Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <PieChart>
+                <Pie
+                  data={lessonTypeDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={75}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {lessonTypeDistribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    color: "hsl(var(--foreground))",
+                    fontSize: "13px",
+                  }}
+                  formatter={(value: number, name: string) => [
+                    `${value} lessons`,
+                    name,
+                  ]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2">
+              {lessonTypeDistribution.map((item) => (
+                <span
+                  key={item.name}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  {item.name}: {item.value}
                 </span>
               ))}
             </div>

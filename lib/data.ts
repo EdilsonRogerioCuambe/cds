@@ -92,7 +92,7 @@ export interface StudentStats {
   wordsLearned: number
 }
 
-// ===== DATA FETCHING FUNCTIONS =====
+// ===== DATA FETCH_FUNCTIONS =====
 
 export async function getCourses(instructorId?: string): Promise<Course[]> {
   try {
@@ -562,6 +562,7 @@ export async function getTeacherStats(instructorId?: string) {
           lessonsCreated: 0,
         },
         distribution: [],
+        lessonTypeDistribution: [],
         performance: [],
         topStudents: []
       }
@@ -574,7 +575,7 @@ export async function getTeacherStats(instructorId?: string) {
       }),
       prisma.lesson.findMany({
         where: { module: { course: { instructorIds: { has: targetId } } } },
-        select: { id: true, moduleId: true, module: { select: { courseId: true } } }
+        select: { id: true, lessonType: true, moduleId: true, module: { select: { courseId: true } } }
       }),
       prisma.enrollment.findMany({
         where: { course: { instructorIds: { has: targetId } } },
@@ -611,7 +612,6 @@ export async function getTeacherStats(instructorId?: string) {
       : 0
 
     // 4. Calculate Completion Rate
-    // Total expected completions = sum of (lessons in course * enrollments in course)
     const courseLessonCounts = lessons.reduce((acc: Record<string, number>, curr) => {
       acc[curr.module.courseId] = (acc[curr.module.courseId] || 0) + 1
       return acc
@@ -639,12 +639,12 @@ export async function getTeacherStats(instructorId?: string) {
 
       const monthScore = monthAttempts.length > 0
         ? monthAttempts.reduce((acc, curr) => acc + curr.score, 0) / monthAttempts.length
-        : 70 + (i * 2) // Slight mock fallback for visual flow if no data
+        : 70 + (i * 2)
 
       return {
         month: monthName,
         avgScore: Math.round(monthScore),
-        completionRate: Math.round(completionRate - (5 - i)) // Dynamic relative to current
+        completionRate: Math.round(completionRate - (5 - i))
       }
     })
 
@@ -668,29 +668,41 @@ export async function getTeacherStats(instructorId?: string) {
         name: s.name,
         level: s.level,
         score: Math.round(s.totalScore / s.count),
-        lessons: s.count, // Using attempts as proxy for lessons for now
+        lessons: s.count,
         avatar: s.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
 
-    // 7. Fallback for Top Students if none exist
     if (topStudents.length === 0) {
-      topStudents.push(
-        { name: "Sem dados ainda", level: "N/A", score: 0, lessons: 0, avatar: "?? " }
-      )
+      topStudents.push({ name: "Sem dados ainda", level: "N/A", score: 0, lessons: 0, avatar: "??" })
     }
+
+    // 8. Calculate Lesson Type Distribution
+    const typeDistributionMap: Record<string, number> = { VIDEO: 0, NOTES: 0, CHALLENGE: 0, LIVE: 0 }
+    lessons.forEach(l => {
+      const type = (l as any).lessonType || "VIDEO"
+      if (typeDistributionMap[type] !== undefined) typeDistributionMap[type]++
+    })
+
+    const lessonTypeDistribution = [
+      { name: "Vídeos", value: typeDistributionMap.VIDEO, color: "hsl(var(--chart-1))" },
+      { name: "Notas", value: typeDistributionMap.NOTES, color: "hsl(var(--chart-2))" },
+      { name: "Desafios", value: typeDistributionMap.CHALLENGE, color: "hsl(var(--chart-3))" },
+      { name: "Aulas Live", value: typeDistributionMap.LIVE, color: "hsl(var(--chart-4))" },
+    ].filter(item => item.value > 0)
 
     return {
       stats: {
         activeStudents,
         completionRate: Math.round(completionRate),
         avgScore: Math.round(avgScore),
-        forumPosts: 0, // Placeholder as no model exists yet
+        forumPosts: 0,
         newEnrollments: activeStudents,
         lessonsCreated: lessons.length,
       },
       distribution,
+      lessonTypeDistribution,
       performance,
       topStudents
     }
@@ -699,13 +711,54 @@ export async function getTeacherStats(instructorId?: string) {
     return {
       stats: { activeStudents: 0, completionRate: 0, avgScore: 0, forumPosts: 0, newEnrollments: 0, lessonsCreated: 0 },
       distribution: [],
+      lessonTypeDistribution: [],
       performance: [],
       topStudents: []
     }
   }
 }
 
+export async function getContentStats() {
+  try {
+    const [lessonCounts, courseLevels] = await Promise.all([
+      prisma.lesson.groupBy({
+        by: ['lessonType'],
+        _count: { _all: true }
+      }),
+      prisma.course.groupBy({
+        by: ['level'],
+        _count: { _all: true }
+      })
+    ])
 
+    const typeLabels: Record<string, string> = {
+      VIDEO: "Vídeos",
+      NOTES: "Notas",
+      CHALLENGE: "Desafios",
+      LIVE: "Aulas Live"
+    }
+
+    const lessonTypeDistribution = lessonCounts.map(item => ({
+      name: typeLabels[item.lessonType] || item.lessonType,
+      value: item._count._all,
+      color: `hsl(var(--chart-${Object.keys(typeLabels).indexOf(item.lessonType) + 1}))`
+    })).filter(item => item.value > 0)
+
+    const courseLevelDistribution = courseLevels.map((item, i) => ({
+      name: item.level,
+      value: item._count._all,
+      color: `hsl(var(--chart-${(i % 5) + 1}))`
+    }))
+
+    return {
+      lessonTypeDistribution,
+      courseLevelDistribution
+    }
+  } catch (error) {
+    console.error("[Data Fetch] Error fetching content stats:", error)
+    return { lessonTypeDistribution: [], courseLevelDistribution: [] }
+  }
+}
 
 export const studentPerformance = [
   { month: "Sep", avgScore: 72, completionRate: 65 },

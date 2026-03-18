@@ -14,6 +14,9 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
+import { getContentStats } from "@/lib/data"
+import { AdminDashboardCharts } from "@/components/admin/admin-charts"
+
 export default async function AdminDashboardPage() {
   // Fetch real stats
   const [
@@ -22,7 +25,8 @@ export default async function AdminDashboardPage() {
     courseCount,
     lessonCount,
     recentEnrollments,
-    recentUsers
+    recentUsers,
+    contentStats
   ] = await Promise.all([
     prisma.user.count({ where: { role: "STUDENT" } }),
     prisma.user.count({ where: { role: "TEACHER" } }),
@@ -41,7 +45,8 @@ export default async function AdminDashboardPage() {
       where: { role: { in: ["STUDENT", "TEACHER"] } },
       orderBy: { createdAt: "desc" },
       select: { id: true, name: true, email: true, role: true, createdAt: true }
-    })
+    }),
+    getContentStats()
   ])
 
   return (
@@ -127,6 +132,11 @@ export default async function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      <AdminDashboardCharts 
+        lessonTypeDistribution={contentStats.lessonTypeDistribution}
+        courseLevelDistribution={contentStats.courseLevelDistribution}
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mt-10">
         {/* Recent Enrollments */}
