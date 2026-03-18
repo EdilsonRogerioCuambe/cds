@@ -282,43 +282,37 @@ export async function inviteTeacherAction(email: string, name: string) {
     }
 
     try {
-        // Create user via Better Auth or Prisma directly?
-        // Better Auth is better for session/account consistency
-        // But we want to send a custom invite link for onboarding
-        
-        const existing = await prisma.user.findUnique({ where: { email } })
-        if (existing) return { error: "Este email já está cadastrado" }
+        // 1. Generate a random temporary password
+        const tempPassword = Math.random().toString(36).slice(-8) + "!" + Math.floor(Math.random() * 100);
 
-        const user = await prisma.user.create({
-            data: {
+        // 2. Create user via Better Auth API (for correct hashing)
+        await auth.api.signUpEmail({
+            body: {
                 email,
+                password: tempPassword,
                 name,
-                role: "TEACHER",
-                status: "PENDING", // Corrected back to PENDING as per requirement
-                registrationNumber: generateRegistrationNumber(),
-                emailVerified: true // They will verify by setting password
             }
-        })
+        });
 
-        // Generate a reset password / setup link
-        // Use sendVerificationEmail or similar if we want them to set password
-        // Actually, for invitations, we can use forgetPassword if enabled
-        // If not, we'll just send them to the login page with a "forgot password" direction
-        // But let's try to use the correct Better Auth API
-        
-        // Trigger the forgotten password flow to send an OTP
-        await auth.api.forgetPasswordEmailOTP({
-            body: { email }
-        })
+        // 3. Elevate to TEACHER and set PENDING status
+        await prisma.user.update({
+            where: { email },
+            data: {
+                role: "TEACHER",
+                status: "PENDING",
+                registrationNumber: generateRegistrationNumber(),
+                emailVerified: true
+            }
+        });
 
         const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/onboarding?email=${encodeURIComponent(email)}`
 
-        // Send Invite Email
+        // 4. Send Invite Email with the temporary password
         await resend.emails.send({
             from: "CDS <contato@ubuntuweblab.site>",
             to: email,
             subject: "Convite para Instrutor - CDS",
-            html: getTeacherInviteEmail(name, url)
+            html: getTeacherInviteEmail(name, url, tempPassword)
         })
 
         return { success: true }

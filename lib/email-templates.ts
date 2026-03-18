@@ -93,14 +93,21 @@ export const getTeacherApprovalEmail = (name: string) => baseTemplate(`
   <p style="font-size: 14px; color: #64748b;">Desejamos muito sucesso em suas aulas!</p>
 `);
 
-export const getTeacherInviteEmail = (name: string, url: string) => baseTemplate(`
-  <h2 style="color: ${DARK_BASE}; margin-top: 0;">Convite para Instrutor</h2>
-  <p>Olá, ${name}! Você foi convidado para se tornar um instrutor na plataforma <strong>${APP_NAME}</strong>.</p>
-  <p>Para começar, precisamos que você defina sua senha e complete seu perfil profissional clicando no botão abaixo:</p>
-  <div style="margin: 30px 0;">
-    <a href="${url}" class="button">Completar meu Cadastro</a>
+export const getTeacherInviteEmail = (name: string, url: string, tempPassword: string) => baseTemplate(`
+  <h2 style="color: ${DARK_BASE}; margin-line: 0;">Boas-vindas ao Time de Instrutores!</h2>
+  <p>Olá, ${name}! Você foi selecionado para se tornar um instrutor na plataforma <strong>${APP_NAME}</strong>.</p>
+  <p>Preparamos um acesso temporário para que você possa entrar e completar seu perfil profissional:</p>
+  
+  <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #e2e8f0;">
+    <p style="margin: 0 0 10px 0;"><strong>Acesso Prioritário:</strong></p>
+    <p style="margin: 0;"><strong>Senha Temporária:</strong> <span style="font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; color: ${BRAND_COLOR}; background: #fff; padding: 2px 8px; border-radius: 4px;">${tempPassword}</span></p>
   </div>
-  <p style="font-size: 14px; color: #64748b;">Este link é pessoal e não deve ser compartilhado.</p>
+
+  <p>Para ativar sua conta e definir sua senha definitiva, clique no botão abaixo:</p>
+  <div style="margin: 30px 0; text-align: center;">
+    <a href="${url}" class="button">Ativar meu Cadastro Agora</a>
+  </div>
+  <p style="font-size: 14px; color: #64748b;">Este convite é pessoal e o link de ativação expirará em breve.</p>
 `);
 export const getAdminInviteEmail = (name: string, tempPassword: string) => baseTemplate(`
   <h2 style="color: ${DARK_BASE}; margin-top: 0;">Acesso Administrativo - CDS</h2>
