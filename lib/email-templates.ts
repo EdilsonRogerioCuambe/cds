@@ -109,7 +109,7 @@ export const getTeacherInviteEmail = (name: string, url: string, tempPassword: s
   </div>
   <p style="font-size: 14px; color: #64748b;">Este convite é pessoal e o link de ativação expirará em breve.</p>
 `);
-export const getAdminInviteEmail = (name: string, tempPassword: string) => baseTemplate(`
+export const getAdminInviteEmail = (name: string, tempPassword: string, url: string) => baseTemplate(`
   <h2 style="color: ${DARK_BASE}; margin-top: 0;">Acesso Administrativo - CDS</h2>
   <p>Olá, ${name}! Sua conta de administrador na plataforma <strong>${APP_NAME}</strong> foi criada com sucesso.</p>
   <p>Para o seu primeiro acesso, utilize as credenciais abaixo:</p>
@@ -119,7 +119,7 @@ export const getAdminInviteEmail = (name: string, tempPassword: string) => baseT
   </div>
   <p style="font-weight: bold; color: ${DARK_BASE};">IMPORTANTE: Por motivos de segurança, você deve alterar sua senha imediatamente ao entrar.</p>
   <div style="margin: 30px 0; text-align: center;">
-    <a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" class="button">Acessar Painel Agora</a>
+    <a href="${url}" class="button">Acessar Painel Agora</a>
   </div>
   <p style="font-size: 13px; color: #64748b; border-top: 1px solid #f1f5f9; pt-20">Este convite é pessoal e intransferível.</p>
 `);

@@ -23,7 +23,7 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 const REMEMBER_ME_KEY = "cds_remember_email"
 
-export function LoginForm() {
+export function LoginForm({ defaultEmail }: { defaultEmail?: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
@@ -31,20 +31,24 @@ export function LoginForm() {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      email: defaultEmail || "",
       password: "",
       rememberMe: false,
     },
   })
 
-  // Load saved email on mount
+  // Load saved email on mount (only if no defaultEmail provided)
   useEffect(() => {
+    if (defaultEmail) {
+        form.setValue("email", defaultEmail);
+        return;
+    }
     const savedEmail = localStorage.getItem(REMEMBER_ME_KEY)
     if (savedEmail) {
       form.setValue("email", savedEmail)
       form.setValue("rememberMe", true)
     }
-  }, [form])
+  }, [form, defaultEmail])
 
   const onSubmit = async (values: LoginFormValues) => {
     try {

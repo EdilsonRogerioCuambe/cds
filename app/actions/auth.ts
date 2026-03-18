@@ -305,7 +305,7 @@ export async function inviteTeacherAction(email: string, name: string) {
             }
         });
 
-        const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/onboarding?email=${encodeURIComponent(email)}`
+        const url = `${process.env.NEXT_PUBLIC_APP_URL}/auth/login?email=${encodeURIComponent(email)}&callbackUrl=/auth/onboarding`
 
         // 4. Send Invite Email with the temporary password
         await resend.emails.send({

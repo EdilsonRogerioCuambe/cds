@@ -1,7 +1,15 @@
+import { webcrypto } from "node:crypto";
+if (!globalThis.crypto) {
+    (globalThis as any).crypto = webcrypto;
+}
 import { PrismaClient, Role, UserStatus } from "@prisma/client";
 import { auth } from "../lib/auth-server";
 import { Resend } from "resend";
 import { getAdminInviteEmail } from "../lib/email-templates";
+
+// comando para remover todos os dados do banco de dados
+// npx prisma db push --force-reset
+// npx prisma db seed
 
 const prisma = new PrismaClient();
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -14,9 +22,9 @@ async function main() {
   const tempPassword = "ConnectTemp2026!"; // The temporary password
 
   console.log(`👤 Checking for Admin: ${adminEmail}`);
-  
-  const existingAdmin = await prisma.user.findUnique({ 
-    where: { email: adminEmail } 
+
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail }
   });
 
   if (existingAdmin) {
@@ -27,7 +35,7 @@ async function main() {
   }
 
   console.log('✨ Creating Fresh Admin Account...');
-  
+
   try {
     // 2. Create via REAL Better Auth API (this handles hashing and additionalFields)
     const result = await auth.api.signUpEmail({
@@ -55,13 +63,17 @@ async function main() {
     });
 
     console.log('📧 Sending Invitation Email via Resend...');
-    
+
     // 4. Send Email Notification
     const { data, error } = await resend.emails.send({
       from: "CDS <contato@ubuntuweblab.site>",
       to: adminEmail,
       subject: "Seu Acesso Administrativo - Connect Digital School",
-      html: getAdminInviteEmail("Edilson Cuambe", tempPassword)
+      html: getAdminInviteEmail(
+        "Edilson Rogério Cuambe",
+        tempPassword,
+        `${process.env.NEXT_PUBLIC_APP_URL}/auth/login?email=${encodeURIComponent(adminEmail)}&callbackUrl=/auth/onboarding`
+      )
     });
 
     if (error) {
