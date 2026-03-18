@@ -24,7 +24,11 @@ const baseTemplate = (content: string) => `
 <body>
   <div class="container">
     <div class="header">
-      <a href="#" class="logo">C<span>o</span>nnect Digital School</a>
+      <img 
+        src="${process.env.NEXT_PUBLIC_APP_URL}/Connect%20Digital%20School.png" 
+        alt="${APP_NAME}" 
+        style="width: 220px; height: auto; max-width: 100%;"
+      />
     </div>
     <div class="content">
       ${content}
