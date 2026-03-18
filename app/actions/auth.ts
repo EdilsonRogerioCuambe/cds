@@ -361,3 +361,35 @@ export async function changePasswordOnboardingAction(prevState: any, formData: F
         return { error: translateError(error.message) || "Falha ao atualizar senha" };
     }
 }
+
+/**
+ * Server Action to update teacher profile (bio and specialty) during onboarding
+ */
+export async function updateTeacherProfileAction(prevState: any, formData: FormData) {
+    const bio = formData.get("bio") as string;
+    const specialty = formData.get("specialty") as string;
+
+    if (!bio) return { error: "Biografia é obrigatória" };
+    if (!specialty) return { error: "Especialidade é obrigatória" };
+
+    const session = await auth.api.getSession({
+        headers: await headers()
+    });
+
+    if (!session) return { error: "Sessão expirada ou não encontrada" };
+
+    try {
+        await prisma.user.update({
+            where: { id: session.user.id },
+            data: {
+                bio,
+                expertise: [specialty] // Expertise is a String[] in our model
+            }
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("[UpdateProfileAction] Erro:", error.message || error);
+        return { error: "Falha ao atualizar perfil" };
+    }
+}

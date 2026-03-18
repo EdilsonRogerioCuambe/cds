@@ -24,14 +24,6 @@ const nextConfig = {
       },
     ],
   },
-
-  // Ensure the API route for videos can handle large files
-  api: {
-    bodyParser: {
-      sizeLimit: "500mb",
-    },
-    responseLimit: false,
-  },
 }
 
 export default nextConfig

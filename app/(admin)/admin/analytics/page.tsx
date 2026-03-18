@@ -43,7 +43,7 @@ export default async function AdminAnalyticsPage() {
     }),
     prisma.enrollment.count({
       where: {
-        createdAt: {
+        startDate: {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         }
       }

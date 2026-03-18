@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Check, Loader2, Rocket, Settings, User } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter, useSearchParams } from "next/navigation"
-import { changePasswordOnboardingAction } from "@/app/actions/auth"
+import { changePasswordOnboardingAction, updateTeacherProfileAction } from "@/app/actions/auth"
 import { useSession } from "@/lib/auth-client"
 
 export default function OnboardingPage() {
@@ -53,12 +53,20 @@ export default function OnboardingPage() {
         e.preventDefault()
         setIsLoading(true)
         
-        setTimeout(() => {
-            setIsLoading(true)
-            toast.success("Perfil atualizado!")
+        const data = new FormData()
+        data.append("bio", formData.bio)
+        data.append("specialty", formData.specialty)
+
+        const res = await updateTeacherProfileAction(null, data)
+        setIsLoading(false)
+
+        if (res.success) {
+            toast.success("Perfil atualizado com sucesso!")
             const userRole = (session?.user as any)?.role
             router.push(userRole === "TEACHER" ? "/teacher/dashboard" : "/student/dashboard")
-        }, 1500)
+        } else {
+            toast.error(res.error || "Erro ao atualizar perfil")
+        }
     }
 
     const isAdmin = (session?.user as any)?.role === "ADMIN"
