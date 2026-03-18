@@ -42,9 +42,10 @@ model User {
   email         String     @unique
   name          String?
   emailVerified Boolean    @default(false)
-  image         String?
-  role          Role       @default(STUDENT)
-  status        UserStatus @default(PENDING)
+  image              String?
+  role               Role       @default(STUDENT)
+  status             UserStatus @default(PENDING)
+  registrationNumber String?    @unique
 
   // Student metrics
   points       Int     @default(0)

@@ -23,6 +23,7 @@ export async function getCurrentUser(): Promise<User | null> {
     email: user.email,
     role: (user.role?.toUpperCase() as UserRole) || UserRole.STUDENT,
     status: (user.status as UserStatus) || UserStatus.ACTIVE,
+    registrationNumber: user.registrationNumber as string | undefined,
     avatar: user.image || undefined,
     currentLevel: user.currentLevel as string | undefined,
     xp: user.xp as number | undefined,

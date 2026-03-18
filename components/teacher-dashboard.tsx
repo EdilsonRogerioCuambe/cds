@@ -104,9 +104,17 @@ export function TeacherDashboard({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold font-display text-foreground text-balance">
-            Teacher Dashboard
-          </h1>
+          <div className="flex flex-col md:flex-row md:items-end gap-2 lg:gap-3">
+            <h1 className="text-3xl font-bold font-display text-foreground text-balance">
+              Teacher Dashboard
+            </h1>
+            <Badge 
+              variant="outline" 
+              className="w-fit h-6 px-2 text-[10px] font-mono font-bold bg-primary/5 border-primary/10 text-primary mb-1 shadow-sm"
+            >
+              Matrícula: {user.registrationNumber || "---"}
+            </Badge>
+          </div>
           <p className="text-muted-foreground mt-1">
             Monitor student progress and manage your courses
           </p>

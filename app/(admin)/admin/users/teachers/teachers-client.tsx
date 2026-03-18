@@ -38,6 +38,7 @@ interface Teacher {
     name: string | null
     email: string
     status: string | null
+    registrationNumber: string | null
     createdAt: string
 }
 
@@ -50,7 +51,8 @@ export function TeachersClient({ initialTeachers }: { initialTeachers: Teacher[]
 
     const filteredTeachers = initialTeachers.filter(t => 
         (t.name?.toLowerCase().includes(search.toLowerCase()) || 
-         t.email.toLowerCase().includes(search.toLowerCase()))
+         t.email.toLowerCase().includes(search.toLowerCase()) ||
+         t.registrationNumber?.toLowerCase().includes(search.toLowerCase()))
     )
 
     const handleApprove = async (id: string) => {
@@ -137,6 +139,7 @@ export function TeachersClient({ initialTeachers }: { initialTeachers: Teacher[]
                 <Table>
                     <TableHeader className="bg-muted/50">
                         <TableRow>
+                            <TableHead>Matrícula</TableHead>
                             <TableHead>Nome e E-mail</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Data de Cadastro</TableHead>
@@ -153,6 +156,11 @@ export function TeachersClient({ initialTeachers }: { initialTeachers: Teacher[]
                         ) : (
                             filteredTeachers.map((teacher) => (
                                 <TableRow key={teacher.id}>
+                                    <TableCell>
+                                        <code className="bg-muted px-2 py-1 rounded text-xs font-mono font-bold text-primary">
+                                            {teacher.registrationNumber || "---"}
+                                        </code>
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex flex-col">
                                             <span className="font-medium">{teacher.name || "N/A"}</span>

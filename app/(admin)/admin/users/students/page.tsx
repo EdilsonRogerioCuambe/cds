@@ -84,8 +84,9 @@ export default async function AdminStudentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
+               <TableHead>Matrícula</TableHead>
+               <TableHead>Nome</TableHead>
+               <TableHead>Email</TableHead>
               <TableHead>Nível</TableHead>
               <TableHead>Data de Cadastro</TableHead>
               <TableHead>Status</TableHead>
@@ -94,9 +95,14 @@ export default async function AdminStudentsPage() {
           </TableHeader>
           <TableBody>
             {students.map((student) => (
-              <TableRow key={student.id}>
-                <TableCell className="font-medium">{student.name || "Sem Nome"}</TableCell>
-                <TableCell>{student.email}</TableCell>
+               <TableRow key={student.id}>
+                 <TableCell>
+                   <code className="bg-muted px-2 py-1 rounded text-xs font-mono font-bold text-primary">
+                     {student.registrationNumber || "---"}
+                   </code>
+                 </TableCell>
+                 <TableCell className="font-medium">{student.name || "Sem Nome"}</TableCell>
+                 <TableCell>{student.email}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{student.currentLevel || "A1"}</Badge>
                 </TableCell>

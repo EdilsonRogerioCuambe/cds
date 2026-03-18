@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth-server"
 import prisma from "@/lib/prisma"
+import { generateRegistrationNumber } from "@/lib/registration"
 import { UserRole } from "@/types/user"
 import { isValidPhoneNumber } from "libphonenumber-js"
 import { headers } from "next/headers"
@@ -114,6 +115,7 @@ export async function signUpAction(prevState: any, formData: FormData) {
         name,
         role,
         phone,
+        registrationNumber: generateRegistrationNumber(),
         termsAccepted: true,
         termsAcceptedAt: new Date().toISOString(),
       },
@@ -292,7 +294,8 @@ export async function inviteTeacherAction(email: string, name: string) {
                 email,
                 name,
                 role: "TEACHER",
-                status: "PENDING",
+                status: "PENDING", // Corrected back to PENDING as per requirement
+                registrationNumber: generateRegistrationNumber(),
                 emailVerified: true // They will verify by setting password
             }
         })

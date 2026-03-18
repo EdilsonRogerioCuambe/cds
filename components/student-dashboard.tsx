@@ -121,9 +121,17 @@ export function StudentDashboard({
     <div className="p-4 lg:p-8 max-w-7xl mx-auto space-y-6 lg:space-y-8 overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-2xl lg:text-3xl font-bold font-display text-foreground text-balance">
-          Bem-vindo de volta, {user.name?.split(" ")[0]}
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-end gap-2 lg:gap-3">
+          <h1 className="text-2xl lg:text-3xl font-bold font-display text-foreground text-balance leading-tight">
+            Bem-vindo de volta, {user.name?.split(" ")[0]}
+          </h1>
+          <Badge 
+            variant="outline" 
+            className="w-fit h-6 px-2 text-[10px] font-mono font-bold bg-primary/5 border-primary/10 text-primary mb-1 shadow-sm"
+          >
+            Matrícula: {user.registrationNumber || "---"}
+          </Badge>
+        </div>
         <p className="text-sm lg:text-base text-muted-foreground mt-1">
           Você está em uma sequência de {stats.streak} dias. Continue assim!
         </p>

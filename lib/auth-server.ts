@@ -11,6 +11,10 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "mongodb",
     }),
+    trustedOrigins: [
+        "https://connectdigitalschool.com.br",
+        "http://localhost:3000"
+    ],
     emailAndPassword: {
         enabled: true,
     },
@@ -60,6 +64,10 @@ export const auth = betterAuth({
                 type: "string",
                 required: false,
                 defaultValue: "PENDING",
+            },
+            registrationNumber: {
+                type: "string",
+                required: false,
             },
             currentLevel: {
                 type: "string",

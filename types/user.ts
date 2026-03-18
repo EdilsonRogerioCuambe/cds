@@ -28,6 +28,7 @@ export interface User {
   email: string
   role: UserRole
   status: UserStatus
+  registrationNumber?: string
   avatar?: string
   createdAt: Date
   updatedAt: Date
