@@ -30,7 +30,7 @@ export default async function AdminDashboardPage() {
     prisma.lesson.count(),
     prisma.enrollment.findMany({
       take: 5,
-      orderBy: { createdAt: "desc" },
+      orderBy: { startDate: "desc" },
       include: {
         user: { select: { name: true, email: true } },
         course: { select: { title: true } }
@@ -154,7 +154,7 @@ export default async function AdminDashboardPage() {
                   </div>
                   <div className="text-right hidden sm:block">
                     <p className="text-xs font-bold text-muted-foreground">
-                      {new Date(enr.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      {new Date(enr.startDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                     </p>
                     <Badge variant="outline" className="mt-1 text-[10px] font-black uppercase tracking-wider">ATIVO</Badge>
                   </div>

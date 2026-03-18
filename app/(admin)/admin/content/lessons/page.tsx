@@ -40,14 +40,14 @@ export default async function AdminLessonsPage() {
         }
       }
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { order: "asc" }
   })
 
   const stats = {
     total: lessons.length,
-    published: lessons.filter(l => l.status === "PUBLISHED").length,
-    video: lessons.filter(l => l.type === "VIDEO").length,
-    interactive: lessons.filter(l => l.type === "INTERACTIVE").length,
+    published: lessons.filter(l => l.published).length,
+    video: lessons.filter(l => l.lessonType === "VIDEO").length,
+    interactive: lessons.filter(l => l.lessonType !== "VIDEO").length,
   }
 
   return (
@@ -106,7 +106,10 @@ export default async function AdminLessonsPage() {
       <div className="flex gap-4 p-4 bg-muted/30 rounded-2xl border border-dashed">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por título ou curso..." className="pl-10 h-11 bg-background border-none ring-1 ring-border rounded-xl" />
+          <input 
+            placeholder="Buscar por título ou curso..." 
+            className="w-full pl-10 h-11 bg-background border-none ring-1 ring-border rounded-xl text-sm focus:ring-2 focus:ring-primary outline-none transition-all" 
+          />
         </div>
       </div>
 
@@ -128,7 +131,7 @@ export default async function AdminLessonsPage() {
                 <TableCell className="pl-6 py-4">
                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        {lesson.type === "VIDEO" ? <Video className="w-5 h-5 text-primary" /> : <FileCode className="w-5 h-5 text-primary" />}
+                        {lesson.lessonType === "VIDEO" ? <Video className="w-5 h-5 text-primary" /> : <FileCode className="w-5 h-5 text-primary" />}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">{lesson.title}</p>
@@ -138,20 +141,20 @@ export default async function AdminLessonsPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="text-sm font-bold">{lesson.module.course.title}</span>
-                    <span className="text-[10px] text-muted-foreground italic">{lesson.module.title}</span>
+                    <span className="text-sm font-bold truncate max-w-[150px]">{lesson.module.course.title}</span>
+                    <span className="text-[10px] text-muted-foreground italic truncate max-w-[150px]">{lesson.module.title}</span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="font-black text-[10px] uppercase tracking-wider px-2 border-primary/20 bg-primary/5 text-primary-foreground/70">
-                    {lesson.type}
+                  <Badge variant="outline" className="font-black text-[10px] uppercase tracking-wider px-2 border-primary/20 bg-primary/5 text-primary">
+                    {lesson.lessonType}
                   </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${lesson.status === "PUBLISHED" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,215,158,0.5)]" : "bg-amber-500"}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${lesson.published ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,215,158,0.5)]" : "bg-amber-500"}`} />
                     <span className="text-[10px] font-black uppercase tracking-widest text-foreground/70">
-                      {lesson.status === "PUBLISHED" ? "Publicada" : "Rascunho"}
+                      {lesson.published ? "Publicada" : "Rascunho"}
                     </span>
                   </div>
                 </TableCell>
