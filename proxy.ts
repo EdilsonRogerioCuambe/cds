@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 /**
  * Middleware for route protection and role-based access control
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Better Auth session token
